@@ -1,22 +1,28 @@
 {
-  "name": "falchion",
+  "name": "falchion-client",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 7000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 7000",
     "lint": "next lint"
   },
   "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "next": "14.2.4"
+    "@material-tailwind/react": "^2.1.9",
+    "axios": "^1.7.2",
+    "eslint": "8.57.0",
+    "next": "14.2.4",
+    "pnpm": "^9.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
+    "react-youtube": "^10.1.0"
   },
   "devDependencies": {
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.4"
+    "@types/react": "^18.3.3",
+    "eslint-config-next": "14.2.4",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4"
   }
 }
