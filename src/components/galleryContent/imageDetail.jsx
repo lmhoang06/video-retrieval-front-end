@@ -100,34 +100,35 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       });
     }
   };
-  const boxes = [
-    {
-      x: 89.4,
-      y: 89.4,
-      w: 379.95,
-      h: 283.1,
-      label: "Person",
-      confidence: 0.95,
-      color: "red", // specify a custom color
-    },
-    {
-      x: 178.8,
-      y: 29.8,
-      w: 290.55,
-      h: 119.2,
-      label: "Car",
-      confidence: 0.92,
-    }, // no color specified, will use default color
-    {
-      x: 300,
-      y: 200,
-      w: 100,
-      h: 50,
-      label: "Object",
-      confidence: 0.8,
-      color: "blue", // specify a custom color
-    },
-  ];
+  const boxes = [];
+  // const boxes = [
+  //   {
+  //     x: 89.4,
+  //     y: 89.4,
+  //     w: 379.95,
+  //     h: 283.1,
+  //     label: "Person",
+  //     confidence: 0.95,
+  //     color: "red", // specify a custom color
+  //   },
+  //   {
+  //     x: 178.8,
+  //     y: 29.8,
+  //     w: 290.55,
+  //     h: 119.2,
+  //     label: "Car",
+  //     confidence: 0.92,
+  //   }, // no color specified, will use default color
+  //   {
+  //     x: 300,
+  //     y: 200,
+  //     w: 100,
+  //     h: 50,
+  //     label: "Object",
+  //     confidence: 0.8,
+  //     color: "blue", // specify a custom color
+  //   },
+  // ];
   return (
     <Dialog
       open={open}
