@@ -81,6 +81,7 @@ const GalleryContent = () => {
   const handleCloseDetail = useCallback(() => setSelectedImage(null), []);
 
   if (images.length === 0) {
+    setCurrentPage(1);
     return (
       <Typography
         variant="h2"
