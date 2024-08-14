@@ -12,9 +12,8 @@ export default function GallerySetting({ className }) {
   const { imagesPerRow, setImagesPerRow } = useGallery();
   const { sessionId, setSessionId } = useApp();
 
-  const handleOnChangeImgsPerRow = useCallback((event) =>
-    setImagesPerRow(event.target.value / 20 + 5)
-  );
+  const handleOnChangeImgsPerRow = (event) =>
+    setImagesPerRow(event.target.value / 20 + 5);
 
   return (
     <div className={className}>

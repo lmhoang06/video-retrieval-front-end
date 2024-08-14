@@ -1,46 +1,60 @@
 "use client";
 
-import { Card } from "@material-tailwind/react";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Settings from "../settings";
 import InputQuery from "../queryInput";
-import { Button } from "@material-tailwind/react";
+import { Button, Typography, Card, Spinner } from "@material-tailwind/react";
 import { useMsal } from "@azure/msal-react";
-import { Typography } from "@material-tailwind/react";
+import Image from "next/image";
 
 function MicrosoftAccount({ className }) {
   const { instance, accounts, inProgress } = useMsal();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Show a loading state or placeholder until the client-side state is ready
+  if (!isClient) {
+    return (
+      <div className={className}>
+        <Card className="w-full h-full p-4 items-center justify-center">
+          <Spinner color="blue" className="w-8 h-8" />
+        </Card>
+      </div>
+    );
+  }
 
   if (accounts.length > 0) {
     return (
       <div className={className}>
-        <Card className="w-full h-full p-4">
-          <div className="flex flex-col items-center justify-center h-full gap-2">
-            <div className="flex flex-row w-full max-h-10 justify-center gap-3">
-              <img
-                src="/Microsoft_Logo.svg"
-                alt="Microsoft Logo"
-                className="h-8 w-8"
-              />
-              <Typography className="self-center" variant="h5">
-                Microsoft Account
-              </Typography>
-            </div>
-            <p>{accounts[0].name}</p>
-            <Button
-              className="w-full"
-              color="light-blue"
-              ripple={true}
-              onClick={() =>
-                instance.logoutRedirect({
-                  onRedirectNavigate: (url) => false,
-                })
-              }
-              loading={inProgress == "logout"}
-            >
-              Logout
-            </Button>
+        <Card className="flex flex-col items-center justify-center gap-2 w-full h-full p-4">
+          <div className="flex flex-row w-full justify-center gap-3">
+            <Image
+              src="/Microsoft_Logo.svg"
+              alt="Microsoft Logo"
+              width={32}
+              height={32}
+            />
+            <Typography className="self-center" variant="h5">
+              Microsoft Account
+            </Typography>
           </div>
+          <p>{accounts[0].name}</p>
+          <Button
+            className="w-full"
+            color="light-blue"
+            ripple={true}
+            onClick={() =>
+              instance.logoutRedirect({
+                onRedirectNavigate: (url) => false,
+              })
+            }
+            loading={inProgress == "logout"}
+          >
+            Logout
+          </Button>
         </Card>
       </div>
     );
@@ -54,10 +68,12 @@ function MicrosoftAccount({ className }) {
           onClick={() => instance.loginPopup()}
           loading={inProgress == "login"}
         >
-          <img
+          <Image
             src="/Microsoft_Logo.svg"
             alt="Microsoft Logo"
-            className="bg-white h-6 w-6"
+            width={24}
+            height={24}
+            className="bg-white"
           />
           Login with Microsoft Account
         </Button>
@@ -72,9 +88,16 @@ export default function Sidebar({ className }) {
       {/* Sidebar's header */}
       <div className="flex flex-row gap-2 max-w-full w-full">
         <div>
-          <img alt="Logo" src="/Falchion_Logo.png" />
+          <Image
+            src="/Falchion_Logo.png"
+            alt="Logo"
+            fill={true}
+            style={{ position: "", objectFit: "contain" }}
+          />
         </div>
-        <Settings />
+        <div>
+          <Settings />
+        </div>
       </div>
       <MicrosoftAccount />
 

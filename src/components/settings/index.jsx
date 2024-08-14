@@ -15,71 +15,25 @@ import { useApp } from "@/contexts/appContext";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-function ImagesSourceSettings({ className }) {
-  const { settings, setSettings } = useApp();
-
-  const updateSettings = (key, value) => {
-    setLocalSettings((prev) => ({ ...prev, [key]: value }));
-    setSettings((prev) => ({ ...prev, DRES: localSettings }));
-  };
-
-  return (
-    <div className={className}>
-      <div className="flex flex-col gap-4">
-        <Typography
-          variant="h4"
-          color="light-blue"
-          textGradient={true}
-          className="border-b-2 border-b-light-blue-400"
-        >
-          Images Source Settings
-        </Typography>
-
-        {/* Manage image source */}
-        <div className="flex flex-col gap-2">
-          <Typography
-            variant="h5"
-            color="light-blue"
-            textGradient={true}
-            className="border-b-2 border-b-light-blue-300"
-          >
-            Image source
-          </Typography>
-          <Input
-            label="URL base (used as URL/{video_name}/{frame_name})"
-            variant="outlined"
-            color="blue"
-            defaultValue={settings.imagesSource}
-            onBlur={(event) => {
-              updateSettings("imageSource", event.target.value);
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function DRESSettings({ className }) {
   const { settings, setSettings, sessionId, setSessionId } = useApp();
   const [localSettings, setLocalSettings] = useState(settings.DRES);
 
-  const fetchSessionId = async () => {
-    try {
-      const { data } = await axios.post(localSettings.Login_URL, {
-        username: localSettings.username,
-        password: localSettings.password,
-      });
-
-      setSessionId(data.sessionId);
-    } catch {
-      toast.error("Failed to fetch session ID from DRES system!");
-    }
-  };
-
   useEffect(() => {
+    const fetchSessionId = async () => {
+      try {
+        const { data } = await axios.post(localSettings.Login_URL, {
+          username: localSettings.username,
+          password: localSettings.password,
+        });
+
+        setSessionId(data.sessionId);
+      } catch {
+        toast.error("Failed to fetch session ID from DRES system!");
+      }
+    };
     fetchSessionId();
-  }, []);
+  });
 
   const inputProps = {
     variant: "outlined",
@@ -195,9 +149,6 @@ export default function Settings({ className }) {
         <DialogBody>
           {/* DRES Settings */}
           <DRESSettings />
-
-          {/* Images Source Settings */}
-          <ImagesSourceSettings />
         </DialogBody>
       </Dialog>
     </div>
@@ -210,5 +161,4 @@ export default function Settings({ className }) {
  * - DRES API URLs: Login, Submit
  * - Username and Password
  * - Session ID
- * Manage Images Source
  */

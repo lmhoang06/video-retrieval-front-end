@@ -65,6 +65,7 @@ const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
           src={src}
           onLoad={handleImageLoad}
           className="w-full h-full object-cover"
+          alt="Bigger image"
         />
         {scaledBoxes.map((box, index) => (
           <div key={index} className="absolute border-2" style={boxStyle(box)}>

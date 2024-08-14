@@ -7,6 +7,7 @@ import ImageDetail from "./imageDetail";
 import ImageFrame from "./imageFrame";
 import { IconArrowLeft, IconArrowRight } from "@/libs/icon";
 import { useApp } from "@/contexts/appContext";
+import NoImageFound from "./noImageFound";
 
 const Pagination = memo(({ totalPages, active, setActive }) => {
   const getItemProps = useCallback(
@@ -58,6 +59,8 @@ const Pagination = memo(({ totalPages, active, setActive }) => {
   );
 });
 
+Pagination.displayName = "Pagination";
+
 const GalleryContent = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,11 +71,15 @@ const GalleryContent = () => {
   );
 
   useEffect(() => {
+    if (images.length == 0) {
+      setCurrentPage(1);
+    }
+
     setTotalPages(Math.ceil(images.length / imagesPerPage));
-    if (currentPage > totalPages) {
+    if ((currentPage > totalPages) & (totalPages != 0)) {
       setCurrentPage(totalPages);
     }
-  }, [images.length, imagesPerPage]);
+  }, [images.length, imagesPerPage, currentPage, totalPages]);
 
   const handleOpenDetail = useCallback(
     (imageData) => setSelectedImage(imageData),
@@ -81,16 +88,7 @@ const GalleryContent = () => {
   const handleCloseDetail = useCallback(() => setSelectedImage(null), []);
 
   if (images.length === 0) {
-    setCurrentPage(1);
-    return (
-      <Typography
-        variant="h2"
-        color="red"
-        className="flex h-full justify-center items-center bg-teal-300"
-      >
-        No image is found!
-      </Typography>
-    );
+    return <NoImageFound />;
   }
 
   const startIndex = (currentPage - 1) * imagesPerPage;

@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import { Input } from "@material-tailwind/react";
 import { useGallery } from "@/contexts/galleryContext";
 
-export default function imagesPerPageManager({ className }) {
+export default function ImagesPerPageManager({ className }) {
   const [imagesPerPageError, setImagesPerPageError] = useState(false);
   const { imagesPerPage, setImagesPerPage } = useGallery();
 
@@ -16,7 +16,7 @@ export default function imagesPerPageManager({ className }) {
     return value != "" && min <= parseInt(value) && parseInt(value) <= max;
   }, []);
 
-  const handleInputChange = useCallback((event) => {
+  const handleInputChange = (event) => {
     if (!validateInput(event)) {
       if (event.type == "blur") {
         event.target.value = imagesPerPage;
@@ -28,7 +28,7 @@ export default function imagesPerPageManager({ className }) {
       setImagesPerPageError(false);
       if (event.type == "blur") setImagesPerPage(parseInt(event.target.value));
     }
-  }, []);
+  };
 
   return (
     <div className={className}>
