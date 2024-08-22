@@ -5,6 +5,7 @@ import { AppProvider } from "@/contexts/appContext";
 import App from "./app";
 import { MsalProvider } from "@azure/msal-react";
 import { PublicClientApplication } from "@azure/msal-browser";
+import { ToastContainer } from "react-toastify";
 
 const pca = new PublicClientApplication({
   auth: {
@@ -19,6 +20,18 @@ export default function Home() {
     <MsalProvider instance={pca}>
       <AppProvider>
         <App />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={4500}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss={false}
+          draggable
+          pauseOnHover={false}
+          theme="light"
+        />
       </AppProvider>
     </MsalProvider>
   );

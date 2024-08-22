@@ -3,8 +3,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Dialog, Typography, Button } from "@material-tailwind/react";
 import submitFrame from "@/libs/submit";
-import toast from "react-hot-toast";
 import { useGallery } from "@/contexts/galleryContext";
+import { useApp } from "@/contexts/appContext";
+import { useMsal } from "@azure/msal-react";
+import { toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
   const [imgWidth, setImgWidth] = useState(0);
@@ -82,6 +85,44 @@ const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const { video_name, frame_idx, similarity_score, src } = imageData;
   const { sessionId } = useGallery();
+  const { queryImage } = useApp();
+  const { instance, accounts } = useMsal();
+
+  const handleOnClick = async () => {
+    const accessToken = (
+      await instance.acquireTokenSilent({
+        scopes: ["User.ReadBasic.All"],
+        account: accounts[0],
+      })
+    )?.accessToken;
+
+    if (!accessToken) {
+      throw Error("Invalid access token!");
+    }
+
+    try {
+      await queryImage(accessToken, src);
+      toast.success("Query Image Success!", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } catch {
+      toast.error("Error!", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    }
+
+    if (open) handleOpen();
+  };
 
   const handleSubmit = () => {
     const data = submitFrame(video_name, frame_idx, sessionId);
@@ -89,15 +130,23 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
 
     if (status === "true" || status === "TRUE") {
       toast.success("Accepted", {
-        duration: 6000,
-        position: "top-left",
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
       });
     }
 
     if (status === "WRONG") {
       toast.error("Wrong answer", {
-        duration: 6000,
-        position: "top-left",
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
       });
     }
   };
@@ -164,7 +213,13 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           >
             Submit
           </Button>
-          <Button color="blue" ripple={true} variant="gradient" size="sm">
+          <Button
+            color="blue"
+            ripple={true}
+            variant="gradient"
+            size="sm"
+            onClick={handleOnClick}
+          >
             KNN
           </Button>
         </div>

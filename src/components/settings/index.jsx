@@ -13,7 +13,8 @@ import {
 } from "@material-tailwind/react";
 import { useApp } from "@/contexts/appContext";
 import axios from "axios";
-import toast from "react-hot-toast";
+import { toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function DRESSettings({ className }) {
   const { settings, setSettings, sessionId, setSessionId } = useApp();
@@ -29,7 +30,14 @@ function DRESSettings({ className }) {
 
         setSessionId(data.sessionId);
       } catch {
-        toast.error("Failed to fetch session ID from DRES system!");
+        toast.error("Failed to fetch session ID from DRES system!", {
+          autoClose: 4500,
+          pauseOnHover: false,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
       }
     };
     fetchSessionId();

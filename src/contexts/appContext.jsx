@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
+import processQueryResult from "@/components/queryInput/processQueryResult";
+import axios from "axios";
 
 const AppContext = createContext(null);
 
@@ -19,8 +21,32 @@ export function AppProvider({ children }) {
       password: process.env.AIC_PASSWORD,
       Login_URL: process.env.DRES_LOGIN_URL,
       Submit_URL: process.env.DRES_SUBMIT_URL,
-    }
+    },
   });
+  const [topk, setTopk] = useState(32);
+
+  async function queryImage(accessToken, query) {
+    let results = null;
+
+    const formData = new FormData();
+    formData.append("query", query);
+    formData.append("topk", topk);
+
+    results = await axios.post(
+      "https://oriskany-clip-api.hf.space/retrieval",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "ngrok-skip-browser-warning": "nothing",
+        },
+      }
+    );
+
+    results = results["data"]["details"];
+
+    setImages(await processQueryResult(accessToken, results, 24));
+  }
 
   const value = {
     images,
@@ -29,6 +55,9 @@ export function AppProvider({ children }) {
     setSessionId,
     settings,
     setSettings,
+    topk,
+    setTopk,
+    queryImage,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

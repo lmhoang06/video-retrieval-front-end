@@ -2,21 +2,18 @@
 
 import { Button, Textarea, Card } from "@material-tailwind/react";
 import React, { useState } from "react";
-import submitQuery from "@/libs/query";
 import { Input } from "@material-tailwind/react";
 import { useApp } from "@/contexts/appContext";
 import { useMsal } from "@azure/msal-react";
-import processQueryResult from "./processQueryResult";
+import { toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function InputQuery({ className }) {
   const [query, setQuery] = useState("");
-  const [topk, setTopk] = useState(10);
-  const { setImages } = useApp();
+  const { topk, setTopk, queryImage } = useApp();
   const { instance, accounts } = useMsal();
 
   const handleOnClick = async () => {
-    const results = await submitQuery(query, topk);
-
     const accessToken = (
       await instance.acquireTokenSilent({
         scopes: ["User.ReadBasic.All"],
@@ -28,19 +25,30 @@ export default function InputQuery({ className }) {
       throw Error("Invalid access token!");
     }
 
-    setImages(await processQueryResult(accessToken, results, 24));
+    try {
+      await queryImage(accessToken, query);
+      toast.success("Query Image Success!", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } catch {
+      toast.error("Error!", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    }
   };
 
   return (
     <Card className={className + " gap-4"}>
-      {/* Text query */}
-      <Textarea
-        label="Text query"
-        color="blue"
-        title="Text query"
-        onChange={(event) => setQuery(event.target.value)}
-      />
-
       {/* Top K */}
       <Input
         label="Top K"
@@ -50,6 +58,14 @@ export default function InputQuery({ className }) {
         max={180}
         value={topk}
         onChange={(event) => setTopk(event.target.value)}
+      />
+
+      {/* Text query */}
+      <Textarea
+        label="Text query"
+        color="blue"
+        title="Text query"
+        onChange={(event) => setQuery(event.target.value)}
       />
 
       <Button
