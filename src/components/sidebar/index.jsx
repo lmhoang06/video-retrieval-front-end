@@ -34,8 +34,10 @@ function MicrosoftAccount({ className }) {
             <Image
               src="/Microsoft_Logo.svg"
               alt="Microsoft Logo"
-              width={32}
-              height={32}
+              width="0"
+              height="0"
+              className="w-8 h-8"
+              priority
             />
             <Typography className="self-center" variant="h5">
               Microsoft Account
@@ -46,11 +48,7 @@ function MicrosoftAccount({ className }) {
             className="w-full"
             color="light-blue"
             ripple={true}
-            onClick={() =>
-              instance.logoutRedirect({
-                onRedirectNavigate: (url) => false,
-              })
-            }
+            onClick={() => instance.logoutPopup()}
             loading={inProgress == "logout"}
           >
             Logout
@@ -87,11 +85,12 @@ export default function Sidebar({ className }) {
     <Card className={className + " gap-4 p-2"}>
       {/* Sidebar's header */}
       <div className="flex flex-row gap-2 max-w-full w-full">
-        <div>
+        <div className="relative">
           <Image
             src="/Falchion_Logo.png"
             alt="Logo"
             fill={true}
+            sizes="100px"
             style={{ position: "", objectFit: "contain" }}
           />
         </div>

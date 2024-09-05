@@ -3,6 +3,7 @@
 import React from "react";
 // import { Typography } from "@material-tailwind/react";
 import { useGallery } from "@/contexts/galleryContext";
+import Image from "next/image";
 
 export default function ImageFrame({ imageData, onClick }) {
   const { video_name, frame_idx, similarity_score, src } = imageData;
@@ -16,25 +17,13 @@ export default function ImageFrame({ imageData, onClick }) {
       }}
       onClick={onClick}
     >
-      <img
-        className="w-full object-cover object-center"
+      <Image 
         src={src}
         alt={`${video_name}_${frame_idx}`}
+        width="0"
+        height="0"
+        className="w-full object-cover object-center"
       />
-      {/* <div className="absolute bottom-0.5 right-0.5 z-10 flex flex-row gap-1">
-        {[`${video_name}_${frame_idx}`, `${similarity_score}`].map(
-          (str, idx) => (
-            <Typography
-              variant="small"
-              color="white"
-              className="bg-blue-800 bg-opacity-60 px-0.5 h-fit rounded-sm flex font-bold"
-              key={idx}
-            >
-              {str}
-            </Typography>
-          )
-        )}
-      </div> */}
     </div>
   );
 }

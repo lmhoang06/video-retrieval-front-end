@@ -7,72 +7,53 @@ import { useGallery } from "@/contexts/galleryContext";
 import { useApp } from "@/contexts/appContext";
 import { useMsal } from "@azure/msal-react";
 import { toast, Bounce } from "react-toastify";
+import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
+import Image from "next/image";
 
 const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
-  const [imgWidth, setImgWidth] = useState(0);
-  const [imgHeight, setImgHeight] = useState(0);
-  const [naturalWidth, setNaturalWidth] = useState(0);
-  const [naturalHeight, setNaturalHeight] = useState(0);
-
+  const [scaledBoxes, setScaledBoxes] = useState([]);
   const imgRef = useRef(null);
 
-  const handleImageLoad = () => {
-    const img = imgRef.current;
-    setImgWidth(img.width);
-    setImgHeight(img.height);
-    setNaturalWidth(img.naturalWidth);
-    setNaturalHeight(img.naturalHeight);
-  };
-
   useEffect(() => {
-    const updateDimensions = () => {
-      const img = imgRef.current;
-      setImgWidth(img.width);
-      setImgHeight(img.height);
-    };
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
+    const img = imgRef.current;
+    if (img && img.complete) {
+      setScaledBoxes(
+        boxes.map((box) => ({
+          x: box.x,
+          y: box.y,
+          w: box.w,
+          h: box.h,
+          label: box.label,
+          confidence: box.confidence,
+          color: "green",
+        }))
+      );
+    }
+  }, [boxes]);
 
-  const scaleWidth = imgWidth / naturalWidth;
-  const scaleHeight = imgHeight / naturalHeight;
-
-  const scaledBoxes = boxes.map((box) => {
-    return {
-      x: box.x * scaleWidth,
-      y: box.y * scaleHeight,
-      w: box.w * scaleWidth,
-      h: box.h * scaleHeight,
-      label: box.label,
-      confidence: box.confidence,
-      color: box.color || "green", // use default color if not specified
-    };
+  const boxStyle = (box) => ({
+    left: `${(box.x - box.w / 2) * 100}%`,
+    top: `${(box.y - box.h / 2) * 100}%`,
+    width: `${box.w * 100}%`,
+    height: `${box.h * 100}%`,
+    borderColor: box.color,
   });
-
-  const boxStyle = (box) => {
-    return {
-      left: `${box.x}px`,
-      top: `${box.y}px`,
-      width: `${box.w}px`,
-      height: `${box.h}px`,
-      borderColor: box.color, // use the box's color for the border
-    };
-  };
 
   return (
     <div className={className}>
       <div className="relative">
-        <img
+        <Image 
           ref={imgRef}
           src={src}
-          onLoad={handleImageLoad}
+          width="0"
+          height="0"
           className="w-full h-full object-cover"
           alt="Bigger image"
         />
         {scaledBoxes.map((box, index) => (
           <div key={index} className="absolute border-2" style={boxStyle(box)}>
-            <div className="absolute top-0 left-0 bg-red-500 text-white px-2 py-1 text-xs -translate-y-full">
+            <div className="absolute top-0 left-0 bg-green-500/50 text-white px-1 py-0.5 text-xs -translate-y-full">
               {box.label} ({box.confidence.toFixed(2)})
             </div>
           </div>
@@ -83,10 +64,54 @@ const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
 };
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
-  const { video_name, frame_idx, similarity_score, src } = imageData;
+  const {
+    video_name: videoName,
+    frame_idx: frameName,
+    similarity_score,
+    src,
+  } = imageData;
   const { sessionId } = useGallery();
   const { queryImage } = useApp();
   const { instance, accounts } = useMsal();
+  const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
+
+  useEffect(() => {
+    const {
+      video_name: videoName,
+      frame_idx: frameName,
+    } = imageData;
+
+    async function get_bbox() {
+      try {
+        let { status, data } = await axios.get(
+          `/api/objectsData?videoName=${videoName}&frameName=${String(
+            frameName
+          ).padStart(3, "0")}`
+        );
+
+        if (status === 200 || status === 302) {
+          setBbox(
+            data.map(({ className, confidence, xywhn }) => {
+              let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
+
+              return {
+                x: x,
+                y: y,
+                w: w,
+                h: h,
+                label: className,
+                confidence: confidence,
+              };
+            })
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching bounding box data:", error);
+      }
+    }
+
+    get_bbox();
+  }, [imageData]);
 
   const handleOnClick = async () => {
     const accessToken = (
@@ -125,7 +150,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   };
 
   const handleSubmit = () => {
-    const data = submitFrame(video_name, frame_idx, sessionId);
+    const data = submitFrame(videoName, frameName, sessionId);
     const status = data?.submission;
 
     if (status === "true" || status === "TRUE") {
@@ -150,39 +175,11 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       });
     }
   };
-  const boxes = [];
-  // const boxes = [
-  //   {
-  //     x: 89.4,
-  //     y: 89.4,
-  //     w: 379.95,
-  //     h: 283.1,
-  //     label: "Person",
-  //     confidence: 0.95,
-  //     color: "red", // specify a custom color
-  //   },
-  //   {
-  //     x: 178.8,
-  //     y: 29.8,
-  //     w: 290.55,
-  //     h: 119.2,
-  //     label: "Car",
-  //     confidence: 0.92,
-  //   }, // no color specified, will use default color
-  //   {
-  //     x: 300,
-  //     y: 200,
-  //     w: 100,
-  //     h: 50,
-  //     label: "Object",
-  //     confidence: 0.8,
-  //     color: "blue", // specify a custom color
-  //   },
-  // ];
+
   return (
     <Dialog
       open={open}
-      size="lg"
+      size="xl"
       className="bg-gray-300 flex flex-row overflow-hidden"
       handler={handleOpen}
       animate={{
@@ -191,13 +188,13 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       }}
     >
       {/* <img className="w-1/2" src={src} alt={`${video_name}_${frame_idx}`} /> */}
-      <ImageWithBoundingBoxes className="w-1/2" src={src} boxes={boxes} />
+      <ImageWithBoundingBoxes className="w-1/2" src={src} boxes={bbox} />
       <div className="w-1/2 flex-col p-3">
         <Typography variant="h4" color="blue">
-          Video name: {video_name}
+          Video name: {videoName}
         </Typography>
         <Typography variant="h4" color="blue">
-          Frame index: {frame_idx}
+          Frame name: {frameName}
         </Typography>
         <Typography variant="h4" color="blue">
           Similarity score: {similarity_score}
@@ -219,6 +216,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             variant="gradient"
             size="sm"
             onClick={handleOnClick}
+            disabled
           >
             KNN
           </Button>
