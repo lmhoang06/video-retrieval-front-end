@@ -10,7 +10,12 @@ const DRIVE_ID_LIST = [
   // "b!C7MJtUkO10-XYMQNroV5OKijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - THMH
 ];
 
-const getImageData = async (accessToken, videoName, frameName) => {
+const getImageData = async (
+  accessToken,
+  videoName,
+  frameName,
+  retryCount = 0
+) => {
   const l_id = parseInt(videoName.slice(1, 3), 10);
 
   if (12 < l_id) return null;
@@ -41,7 +46,12 @@ const getImageData = async (accessToken, videoName, frameName) => {
     ).toString("base64")}`;
   } catch (error) {
     console.error(`Error fetching image data: ${error.message}`);
-    return null;
+    if (retryCount < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      return getImageData(accessToken, videoName, frameName, retryCount + 1);
+    } else {
+      return null;
+    }
   }
 };
 

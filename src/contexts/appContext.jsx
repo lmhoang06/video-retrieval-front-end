@@ -25,11 +25,12 @@ export function AppProvider({ children }) {
   });
   const [topk, setTopk] = useState(32);
 
-  async function queryImage(accessToken, query) {
+  async function queryImage(accessToken, query, queryType) {
     let results = null;
 
     const formData = new FormData();
     formData.append("query", query);
+    formData.append("query_type", queryType);
     formData.append("topk", topk);
 
     results = await axios.post(

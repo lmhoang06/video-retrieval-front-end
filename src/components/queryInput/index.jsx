@@ -26,7 +26,7 @@ export default function InputQuery({ className }) {
     }
 
     try {
-      await queryImage(accessToken, query);
+      await queryImage(accessToken, query, 'text');
       toast.success("Query Image Success!", {
         autoClose: 4500,
         pauseOnHover: false,

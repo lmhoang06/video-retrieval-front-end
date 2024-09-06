@@ -125,8 +125,26 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       throw Error("Invalid access token!");
     }
 
+    function convertBase64ToImage(src) {
+      // Check if the string is a base64 string
+      const isBase64 = /^[A-Za-z0-9+\/=]+$/.test(src);
+    
+      // Check if the string is a base64-encoded image
+      const isBase64Image = /^data:image\/(jpg|jpeg|png|gif|bmp|svg);base64,/.test(src);
+    
+      if (isBase64 || isBase64Image) {
+        // Convert base64 string to image
+        const img = new Image();
+        img.src = src;
+        return img;
+      } else {
+        // Return original string
+        return src;
+      }
+    }
+
     try {
-      await queryImage(accessToken, src);
+      await queryImage(accessToken, convertBase64ToImage(src), 'image');
       toast.success("Query Image Success!", {
         autoClose: 4500,
         pauseOnHover: false,
@@ -216,7 +234,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             variant="gradient"
             size="sm"
             onClick={handleOnClick}
-            disabled
           >
             KNN
           </Button>
