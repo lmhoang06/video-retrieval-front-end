@@ -11,7 +11,12 @@ import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
 
-const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
+const ImageWithBoundingBoxes = ({
+  className,
+  boxes = [],
+  src,
+  showObjects = true,
+}) => {
   const [scaledBoxes, setScaledBoxes] = useState([]);
   const imgRef = useRef(null);
 
@@ -51,13 +56,18 @@ const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
           className="w-full h-full object-cover"
           alt="Bigger image"
         />
-        {scaledBoxes.map((box, index) => (
-          <div key={index} className="absolute border-2" style={boxStyle(box)}>
-            <div className="absolute top-0 left-0 bg-green-500/50 text-white px-1 py-0.5 text-xs -translate-y-full">
-              {box.label} ({box.confidence.toFixed(2)})
+        {showObjects &&
+          scaledBoxes.map((box, index) => (
+            <div
+              key={index}
+              className="absolute border-2"
+              style={boxStyle(box)}
+            >
+              <div className="absolute top-0 left-0 bg-green-500/50 text-white px-1 py-0.5 text-xs -translate-y-full">
+                {box.label} ({box.confidence.toFixed(2)})
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );
@@ -74,6 +84,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   const { queryImage } = useApp();
   const { instance, accounts } = useMsal();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
+  const [showObjects, setShowObjects] = useState(true);
 
   useEffect(() => {
     const { video_name: videoName, frame_idx: frameName } = imageData;
@@ -203,7 +214,12 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       }}
     >
       {/* <img className="w-1/2" src={src} alt={`${video_name}_${frame_idx}`} /> */}
-      <ImageWithBoundingBoxes className="w-1/2" src={src} boxes={bbox} />
+      <ImageWithBoundingBoxes
+        className="w-1/2"
+        src={src}
+        boxes={bbox}
+        showObjects={showObjects}
+      />
       <div className="w-1/2 flex-col p-3">
         <Typography variant="h4" color="blue">
           Video name: {videoName}
@@ -218,7 +234,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         <div className="flex gap-2">
           <Button
             color="blue"
-            ripple={true}
+            ripple
             variant="gradient"
             onClick={handleSubmit}
             size="sm"
@@ -227,12 +243,21 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           </Button>
           <Button
             color="blue"
-            ripple={true}
+            ripple
             variant="gradient"
             size="sm"
             onClick={handleOnClick}
           >
             KNN
+          </Button>
+          <Button
+            color="blue"
+            ripple
+            variant="gradient"
+            size="sm"
+            onClick={() => setShowObjects(!showObjects)}
+          >
+            {showObjects ? "Hide objects" : "Show objects"}
           </Button>
         </div>
       </div>

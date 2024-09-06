@@ -59,7 +59,7 @@ function DRESSettings({ className }) {
         <Typography
           variant="h4"
           color="light-blue"
-          textGradient={true}
+          textGradient
           className="border-b-2 border-b-light-blue-400"
         >
           DRES Settings
@@ -70,7 +70,7 @@ function DRESSettings({ className }) {
           <Typography
             variant="h5"
             color="light-blue"
-            textGradient={true}
+            textGradient
             className="border-b-2 border-b-light-blue-300"
           >
             DRES API URLs
@@ -94,7 +94,7 @@ function DRESSettings({ className }) {
           <Typography
             variant="h5"
             color="light-blue"
-            textGradient={true}
+            textGradient
             className="border-b-2 border-b-light-blue-300"
           >
             DRES account
@@ -118,7 +118,7 @@ function DRESSettings({ className }) {
           <Typography
             variant="h5"
             color="light-blue"
-            textGradient={true}
+            textGradient
             className="border-b-2 border-b-light-blue-300"
           >
             DRES session ID
@@ -150,7 +150,7 @@ export default function Settings({ className }) {
       </Button>
       <Dialog open={open} handler={handleOpen} size="md">
         <DialogHeader className="border-b-4 border-double border-blue-600 justify-center">
-          <Typography variant="h2" color="blue" textGradient={true}>
+          <Typography variant="h2" color="blue" textGradient>
             SETTINGS
           </Typography>
         </DialogHeader>

@@ -47,7 +47,7 @@ function MicrosoftAccount({ className }) {
           <Button
             className="w-full"
             color="light-blue"
-            ripple={true}
+            ripple
             onClick={() => instance.logoutPopup()}
             loading={inProgress == "logout"}
           >
@@ -62,7 +62,7 @@ function MicrosoftAccount({ className }) {
         <Button
           className="w-full flex items-center justify-center gap-2 px-1"
           color="light-blue"
-          ripple={true}
+          ripple
           onClick={() =>
             instance.loginPopup({
               scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
@@ -93,7 +93,7 @@ export default function Sidebar({ className }) {
           <Image
             src="/Falchion_Logo.png"
             alt="Logo"
-            fill={true}
+            fill
             sizes="100px"
             style={{ position: "", objectFit: "contain" }}
           />
