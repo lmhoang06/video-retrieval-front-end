@@ -16,7 +16,7 @@ export default function InputQuery({ className }) {
   const handleOnClick = async () => {
     const accessToken = (
       await instance.acquireTokenSilent({
-        scopes: ["User.ReadBasic.All"],
+        scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
         account: accounts[0],
       })
     )?.accessToken;
