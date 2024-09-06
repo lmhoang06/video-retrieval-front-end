@@ -195,7 +195,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     <Dialog
       open={open}
       size="xl"
-      className="bg-gray-300 flex flex-row overflow-hidden"
+      className="bg-gray-300 flex flex-row"
       handler={handleOpen}
       animate={{
         mount: { scale: 1, y: 0 },

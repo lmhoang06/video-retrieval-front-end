@@ -15,6 +15,7 @@
     "@prisma/client": "5.19.0",
     "axios": "^1.7.2",
     "eslint": "8.57.0",
+    "google-translate-api-x": "^10.7.1",
     "next": "14.2.5",
     "p-limit": "^6.1.0",
     "p-queue": "^8.0.1",

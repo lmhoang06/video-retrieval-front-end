@@ -1,5 +1,4 @@
 import { prisma } from "@/app/api/database";
-import { equal } from "assert";
 
 export async function POST(request) {
   // Parse the request body to get the user-supplied object
