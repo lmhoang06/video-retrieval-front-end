@@ -63,7 +63,11 @@ function MicrosoftAccount({ className }) {
           className="w-full flex items-center justify-center gap-2 px-1"
           color="light-blue"
           ripple={true}
-          onClick={() => instance.loginPopup()}
+          onClick={() =>
+            instance.loginPopup({
+              scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
+            })
+          }
           loading={inProgress == "login"}
         >
           <Image
