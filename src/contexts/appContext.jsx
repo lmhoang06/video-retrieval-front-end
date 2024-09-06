@@ -42,7 +42,7 @@ export function AppProvider({ children }) {
       }
     );
 
-    if (results["status"] != 200 || results["status"] != 302) {
+    if (results["status"] != 200 && results["status"] != 302) {
       throw Error("Failed to kNN!");
     }
 
