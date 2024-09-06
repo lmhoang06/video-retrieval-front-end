@@ -43,7 +43,7 @@ const ImageWithBoundingBoxes = ({ className, boxes = [], src }) => {
   return (
     <div className={className}>
       <div className="relative">
-        <Image 
+        <Image
           ref={imgRef}
           src={src}
           width="0"
@@ -76,10 +76,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
 
   useEffect(() => {
-    const {
-      video_name: videoName,
-      frame_idx: frameName,
-    } = imageData;
+    const { video_name: videoName, frame_idx: frameName } = imageData;
 
     async function get_bbox() {
       try {
@@ -125,18 +122,17 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       throw Error("Invalid access token!");
     }
 
-    function convertBase64ToImage(src) {
+    async function convertBase64ToImage(src) {
       // Check if the string is a base64 string
       const isBase64 = /^[A-Za-z0-9+\/=]+$/.test(src);
-    
+
       // Check if the string is a base64-encoded image
-      const isBase64Image = /^data:image\/(jpg|jpeg|png|gif|bmp|svg);base64,/.test(src);
-    
+      const isBase64Image =
+        /^data:image\/(jpg|jpeg|png|gif|bmp|svg);base64,/.test(src);
+
       if (isBase64 || isBase64Image) {
         // Convert base64 string to image
-        const img = new Image();
-        img.src = src;
-        return img;
+        return await fetch(src).then((res) => res.blob());
       } else {
         // Return original string
         return src;
@@ -144,7 +140,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     }
 
     try {
-      await queryImage(accessToken, convertBase64ToImage(src), 'image');
+      await queryImage(accessToken, await convertBase64ToImage(src), "image");
       toast.success("Query Image Success!", {
         autoClose: 4500,
         pauseOnHover: false,
@@ -153,8 +149,9 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         theme: "light",
         transition: Bounce,
       });
-    } catch {
-      toast.error("Error!", {
+    } catch (err) {
+      console.error(err);
+      toast.error("KNN failed!", {
         autoClose: 4500,
         pauseOnHover: false,
         draggable: true,

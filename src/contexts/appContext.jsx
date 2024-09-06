@@ -26,14 +26,12 @@ export function AppProvider({ children }) {
   const [topk, setTopk] = useState(32);
 
   async function queryImage(accessToken, query, queryType) {
-    let results = null;
-
     const formData = new FormData();
     formData.append("query", query);
-    formData.append("query_type", queryType);
+    formData.append("queryType", queryType);
     formData.append("topk", topk);
 
-    results = await axios.post(
+    let results = await axios.post(
       "https://oriskany-clip-api.hf.space/retrieval",
       formData,
       {
@@ -43,6 +41,10 @@ export function AppProvider({ children }) {
         },
       }
     );
+
+    if (results["status"] != 200 || results["status"] != 302) {
+      throw Error("Failed to kNN!");
+    }
 
     results = results["data"]["details"];
 
