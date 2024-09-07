@@ -19,7 +19,7 @@ export default function Gallery({ className }) {
     <GalleryProvider>
       <div className={className}>
         <div className="h-full flex flex-col">
-          <GallerySetting className="p-2 pb-0" />
+          <GallerySetting className="p-2 pb-0 mt-1" />
           <GalleryContent />
         </div>
       </div>
