@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export default function Sidebar({ className }) {
   return (
-    <Card className={className + " gap-4 p-2 pl-4"}>
+    <Card className={className + " gap-4 p-3"}>
       {/* Sidebar's header */}
       <div className="flex flex-row gap-2 max-w-full w-full">
         <div className="relative">
