@@ -100,7 +100,7 @@ export default function Sidebar({ className }) {
           />
         </div>
         <div>
-          <Settings />
+          {/* <Settings /> */}
         </div>
       </div>
       <MicrosoftAccount />
