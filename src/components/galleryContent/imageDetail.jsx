@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { Dialog, Typography, Button } from "@material-tailwind/react";
 import submitFrame from "@/libs/submit";
 import { useGallery } from "@/contexts/galleryContext";
@@ -11,67 +11,63 @@ import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
 
-const ImageWithBoundingBoxes = ({
-  className,
-  boxes = [],
-  src,
-  showObjects = true,
-}) => {
-  const [scaledBoxes, setScaledBoxes] = useState([]);
-  const imgRef = useRef(null);
+const boxStyle = (box) => ({
+  left: `${(box.x - box.w / 2) * 100}%`,
+  top: `${(box.y - box.h / 2) * 100}%`,
+  width: `${box.w * 100}%`,
+  height: `${box.h * 100}%`,
+  borderColor: box.color,
+});
 
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img && img.complete) {
-      setScaledBoxes(
-        boxes.map((box) => ({
-          x: box.x,
-          y: box.y,
-          w: box.w,
-          h: box.h,
-          label: box.label,
-          confidence: box.confidence,
-          color: "green",
-        }))
-      );
-    }
-  }, [boxes]);
+const ImageWithBoundingBoxes = memo(
+  ({ className, boxes = [], src, showObjects = true }) => {
+    const imgRef = useRef(null);
 
-  const boxStyle = (box) => ({
-    left: `${(box.x - box.w / 2) * 100}%`,
-    top: `${(box.y - box.h / 2) * 100}%`,
-    width: `${box.w * 100}%`,
-    height: `${box.h * 100}%`,
-    borderColor: box.color,
-  });
+    const scaledBoxes = useMemo(() => {
+      const img = imgRef.current;
+      if (!img || !img.complete) return [];
 
-  return (
-    <div className={className}>
-      <div className="relative">
-        <Image
-          ref={imgRef}
-          src={src}
-          width="0"
-          height="0"
-          className="w-full h-full object-cover"
-          alt="Bigger image"
-        />
-        {showObjects &&
-          scaledBoxes.map((box, index) => (
-            <div
-              key={index}
-              className="absolute border-2"
-              style={boxStyle(box)}
-            >
-              <div className="absolute top-0 left-0 bg-green-500/50 text-white px-1 py-0.5 text-xs -translate-y-full">
-                {box.label} ({box.confidence.toFixed(2)})
+      return boxes.map((box) => ({
+        x: box.x,
+        y: box.y,
+        w: box.w,
+        h: box.h,
+        label: box.label,
+        confidence: box.confidence,
+        color: "green",
+      }));
+    }, [boxes]);
+
+    return (
+      <div className={className}>
+        <div className="relative">
+          <Image
+            ref={imgRef}
+            src={src}
+            width="0"
+            height="0"
+            className="w-full h-full object-cover"
+            alt="Bigger image"
+          />
+          {showObjects &&
+            scaledBoxes.map((box, index) => (
+              <div
+                key={index}
+                className="absolute border-2"
+                style={boxStyle(box)}
+              >
+                <div className="absolute top-0 left-0 bg-green-500/50 text-white px-1 py-0.5 text-xs -translate-y-full">
+                  {box.label} ({box.confidence.toFixed(2)})
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+
+ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const {
@@ -121,7 +117,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     get_bbox();
   }, [imageData]);
 
-  const handleOnClick = async () => {
+  const handleOnClick = useCallback(async () => {
     const accessToken = (
       await instance.acquireTokenSilent({
         scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
@@ -173,9 +169,9 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     }
 
     if (open) handleOpen();
-  };
+  }, [instance, accounts, queryImage, handleOpen, open, src]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     const data = submitFrame(videoName, frameName, sessionId);
     const status = data?.submission;
 
@@ -200,7 +196,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         transition: Bounce,
       });
     }
-  };
+  }, [frameName, videoName, sessionId]);
 
   return (
     <Dialog

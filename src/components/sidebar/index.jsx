@@ -94,8 +94,9 @@ export default function Sidebar({ className }) {
             src="/Falchion_Logo.png"
             alt="Logo"
             fill
-            sizes="100px"
+            sizes="100%"
             style={{ position: "", objectFit: "contain" }}
+            quality={75}
           />
         </div>
         <div>

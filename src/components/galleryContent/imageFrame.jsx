@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
-// import { Typography } from "@material-tailwind/react";
+import React, { memo } from "react";
 import { useGallery } from "@/contexts/galleryContext";
 import Image from "next/image";
 
-export default function ImageFrame({ imageData, onClick }) {
+function ImageFrame({ imageData, onClick }) {
   const { video_name, frame_idx, similarity_score, src } = imageData;
   const { imagesPerRow } = useGallery();
 
@@ -27,3 +26,5 @@ export default function ImageFrame({ imageData, onClick }) {
     </div>
   );
 }
+
+export default memo(ImageFrame);

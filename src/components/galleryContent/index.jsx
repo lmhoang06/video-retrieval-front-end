@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useMemo } from "react";
 import { Typography, Button, IconButton } from "@material-tailwind/react";
 import { useGallery } from "@/contexts/galleryContext";
 import ImageDetail from "./imageDetail";
@@ -20,11 +20,11 @@ const Pagination = memo(({ totalPages, active, setActive }) => {
   );
 
   const next = useCallback(() => {
-    if (active < totalPages) setActive(active + 1);
+    if (active < totalPages) setActive((prev) => prev + 1);
   }, [active, totalPages, setActive]);
-
+  
   const prev = useCallback(() => {
-    if (active > 1) setActive(active - 1);
+    if (active > 1) setActive((prev) => prev - 1);
   }, [active, setActive]);
 
   return (
@@ -66,20 +66,19 @@ const GalleryContent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const { imagesPerRow, imagesPerPage } = useGallery();
   const { images } = useApp();
-  const [totalPages, setTotalPages] = useState(
-    Math.ceil(images.length / imagesPerPage)
+  const totalPages = useMemo(
+    () => Math.ceil(images.length / imagesPerPage),
+    [images.length, imagesPerPage]
   );
 
   useEffect(() => {
     if (images.length == 0) {
       setCurrentPage(1);
     }
-
-    setTotalPages(Math.ceil(images.length / imagesPerPage));
     if ((currentPage > totalPages) & (totalPages != 0)) {
       setCurrentPage(totalPages);
     }
-  }, [images.length, imagesPerPage, currentPage, totalPages]);
+  }, [images.length, currentPage, totalPages]);
 
   const handleOpenDetail = useCallback(
     (imageData) => setSelectedImage(imageData),
@@ -87,12 +86,14 @@ const GalleryContent = () => {
   );
   const handleCloseDetail = useCallback(() => setSelectedImage(null), []);
 
+  const currentImages = useMemo(() => {
+    const startIndex = (currentPage - 1) * imagesPerPage;
+    return images.slice(startIndex, startIndex + imagesPerPage);
+  }, [currentPage, imagesPerPage, images]);
+
   if (images.length === 0) {
     return <NoImageFound />;
   }
-
-  const startIndex = (currentPage - 1) * imagesPerPage;
-  const currentImages = images.slice(startIndex, startIndex + imagesPerPage);
 
   return (
     <div className="overflow-y-auto">

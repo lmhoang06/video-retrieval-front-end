@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Textarea, Card } from "@material-tailwind/react";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Input } from "@material-tailwind/react";
 import { useApp } from "@/contexts/appContext";
 import { useMsal } from "@azure/msal-react";
@@ -15,19 +15,19 @@ export default function InputQuery({ className }) {
   const { topk, setTopk, queryImage } = useApp();
   const { instance, accounts } = useMsal();
 
-  const handleOnClick = async () => {
-    const accessToken = (
-      await instance.acquireTokenSilent({
-        scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
-        account: accounts[0],
-      })
-    )?.accessToken;
-
-    if (!accessToken) {
-      throw Error("Invalid access token!");
-    }
-
+  const handleOnClick = useCallback(async () => {
     try {
+      const accessToken = (
+        await instance.acquireTokenSilent({
+          scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
+          account: accounts[0],
+        })
+      )?.accessToken;
+
+      if (!accessToken) {
+        throw new Error("Invalid access token!");
+      }
+
       await queryImage(accessToken, query, "text");
       toast.success("Query Image Success!", {
         autoClose: 4500,
@@ -37,8 +37,9 @@ export default function InputQuery({ className }) {
         theme: "light",
         transition: Bounce,
       });
-    } catch {
-      toast.error("Error!", {
+    } catch (error) {
+      console.error("Query Error:", error);
+      toast.error("Error submitting query. Please try again.", {
         autoClose: 4500,
         pauseOnHover: false,
         draggable: true,
@@ -47,18 +48,29 @@ export default function InputQuery({ className }) {
         transition: Bounce,
       });
     }
-  };
+  }, [instance, accounts, queryImage, query]);
 
-  const handleTranslateClick = async () => {
+  const handleTranslateClick = useCallback(async () => {
     setLoading(true);
-    const translationResponse = await axios.post("/api/translateToEN", {
-      text: query,
-    });
-
-    const translatedText = await translationResponse["data"];
-    setQuery(translatedText);
-    setLoading(false);
-  };
+    try {
+      const translationResponse = await axios.post("/api/translateToEN", {
+        text: query,
+      });
+      setQuery(translationResponse.data);
+    } catch (error) {
+      console.error("Translation Error:", error);
+      toast.error("Error translating text. Please try again.", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
 
   return (
     <Card className={className + " gap-4"}>
@@ -91,7 +103,7 @@ export default function InputQuery({ className }) {
         onClick={handleTranslateClick}
         loading={loading}
       >
-        Translate To English
+        {loading ? "Translating..." : "Translate To English"}
       </Button>
 
       <Button
