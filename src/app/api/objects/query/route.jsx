@@ -24,13 +24,13 @@ export async function POST(request) {
       },
     },
     where: {
-      objects: {
-        some: {
-          className: {
-            in: classNameList,
+      AND: classNameList.map(className => ({
+        objects: {
+          some: {
+            className: className,
           },
         },
-      },
+      })),
     },
   });
 
@@ -46,7 +46,13 @@ export async function POST(request) {
       });
 
       for (const [className, expectedCount] of Object.entries(body)) {
-        if (expectedCount !== 0 && actualCounts.get(className) !== expectedCount) {
+        if (actualCounts.get(className) == undefined) {
+          return false;
+        }
+        if (expectedCount == 0) {
+          return true;
+        }
+        if (actualCounts.get(className) !== expectedCount) {
           return false;
         }
       }

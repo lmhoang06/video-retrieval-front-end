@@ -48,7 +48,7 @@ export function AppProvider({ children }) {
 
     results = results["data"]["details"];
 
-    setImages(await processQueryResult(accessToken, results, 18));
+    setImages(await processQueryResult(accessToken, results, 16));
   }
 
   const value = {
