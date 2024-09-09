@@ -88,7 +88,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     async function get_bbox() {
       try {
         let { status, data } = await axios.get(
-          `/api/objectsData?videoName=${videoName}&frameName=${String(
+          `/api/objects/info?videoName=${videoName}&frameName=${String(
             frameName
           ).padStart(3, "0")}`
         );

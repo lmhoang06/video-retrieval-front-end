@@ -8,6 +8,7 @@ import { useMsal } from "@azure/msal-react";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
+import ObjectsSearch from "./objectsSearch";
 
 export default function InputQuery({ className }) {
   const [query, setQuery] = useState("");
@@ -114,6 +115,8 @@ export default function InputQuery({ className }) {
       >
         Submit Query
       </Button>
+
+      <ObjectsSearch className="pt-8" />
     </Card>
   );
 }

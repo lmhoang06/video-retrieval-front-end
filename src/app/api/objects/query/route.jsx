@@ -46,7 +46,7 @@ export async function POST(request) {
       });
 
       for (const [className, expectedCount] of Object.entries(body)) {
-        if (actualCounts.get(className) !== expectedCount) {
+        if (expectedCount !== 0 && actualCounts.get(className) !== expectedCount) {
           return false;
         }
       }
