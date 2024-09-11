@@ -55,12 +55,8 @@ const getImageData = async (
   }
 };
 
-const processResult = async (item, accessToken) => {
+const processResult = async ({ videoName, frameName, distance }, accessToken) => {
   try {
-    const videoName = item.videoName;
-    const frameName = item.frameName;
-    const distance = item.distance;
-
     const src = await getImageData(accessToken, videoName, frameName);
 
     return {
