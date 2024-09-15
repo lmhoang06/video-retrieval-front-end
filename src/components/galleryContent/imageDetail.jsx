@@ -11,8 +11,6 @@ import React, {
 import { Dialog, Typography, Button } from "@material-tailwind/react";
 import submitFrame from "@/libs/submit";
 import { useGallery } from "@/contexts/galleryContext";
-import { useApp } from "@/contexts/appContext";
-import { useMsal } from "@azure/msal-react";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
@@ -84,8 +82,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     src,
   } = imageData;
   const { sessionId } = useGallery();
-  const { queryImage } = useApp();
-  const { instance, accounts } = useMsal();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(true);
   const [frameIdx, setFrameIdx] = useState(0);
@@ -141,60 +137,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     get_bbox();
     getKeyframeIdx();
   }, [imageData]);
-
-  const handleOnClick = useCallback(async () => {
-    const accessToken = (
-      await instance.acquireTokenSilent({
-        scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
-        account: accounts[0],
-      })
-    )?.accessToken;
-
-    if (!accessToken) {
-      throw Error("Invalid access token!");
-    }
-
-    async function convertBase64ToImage(src) {
-      // Check if the string is a base64 string
-      const isBase64 = /^[A-Za-z0-9+\/=]+$/.test(src);
-
-      // Check if the string is a base64-encoded image
-      const isBase64Image =
-        /^data:image\/(jpg|jpeg|png|gif|bmp|svg);base64,/.test(src);
-
-      if (isBase64 || isBase64Image) {
-        // Convert base64 string to image
-        return await fetch(src).then((res) => res.blob());
-      } else {
-        // Return original string
-        return src;
-      }
-    }
-
-    try {
-      await queryImage(accessToken, await convertBase64ToImage(src), "image");
-      toast.success("Query Image Success!", {
-        autoClose: 4500,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("KNN failed!", {
-        autoClose: 4500,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
-    }
-
-    if (open) handleOpen();
-  }, [instance, accounts, queryImage, handleOpen, open, src]);
 
   const handleSubmit = useCallback(() => {
     const data = submitFrame(videoName, frameName, sessionId);
@@ -264,15 +206,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             size="sm"
           >
             Submit
-          </Button>
-          <Button
-            color="blue"
-            ripple
-            variant="gradient"
-            size="sm"
-            onClick={handleOnClick}
-          >
-            KNN
           </Button>
           <Button
             color="blue"
