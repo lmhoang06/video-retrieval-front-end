@@ -1,4 +1,4 @@
-import { prisma } from "@/app/api/database";
+import { prisma } from "@/app/api/objects/database";
 
 export async function GET() {
   let classNames = await prisma.objects.groupBy({

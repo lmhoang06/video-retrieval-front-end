@@ -1,4 +1,4 @@
-import { prisma } from "@/app/api/database";
+import { prisma } from "@/app/api/objects/database";
 
 export async function POST(request) {
   // Parse the request body to get the user-supplied object

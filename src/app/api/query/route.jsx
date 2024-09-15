@@ -34,6 +34,9 @@
  * }
  */
 
+import axios from "axios";
+import { prisma } from "@/app/api/objects/database";
+
 async function textQuery(query, topk) {
   const formData = new FormData();
   formData.append("query", query);
@@ -61,9 +64,27 @@ async function textQuery(query, topk) {
   }));
 }
 
+async function convertBase64ToImage(src) {
+  // Check if the string is a base64 string
+  const isBase64 = /^[A-Za-z0-9+\/=]+$/.test(src);
+
+  // Check if the string is a base64-encoded image
+  const isBase64Image = /^data:image\/(jpg|jpeg|png|gif|bmp|svg);base64,/.test(
+    src
+  );
+
+  if (isBase64 || isBase64Image) {
+    // Convert base64 string to image
+    return await fetch(src).then((res) => res.blob());
+  } else {
+    // Return original string
+    return src;
+  }
+}
+
 async function imageQuery(query, topk) {
   const formData = new FormData();
-  formData.append("query", query);
+  formData.append("query", await convertBase64ToImage(query));
   formData.append("queryType", "image");
   formData.append("topk", topk);
 
@@ -89,21 +110,79 @@ async function imageQuery(query, topk) {
 }
 
 async function objectsQuery(objects) {
-  const results = await axios.post("/api/objects/query", objects);
-  return results["data"].map(({ videoName, frameName }) => ({
-    videoName,
-    frameName,
-  }));
+  const body = objects;
+
+  // Extract keys (class names) and their corresponding values (counts)
+  const classNameList = Object.keys(body);
+
+  let images = await prisma.frames.findMany({
+    select: {
+      frameName: true,
+      videos: {
+        select: {
+          videoName: true,
+        },
+      },
+      objects: {
+        select: {
+          className: true,
+          confidence: true,
+          xywhn: true,
+        },
+      },
+    },
+    where: {
+      AND: classNameList.map((className) => ({
+        objects: {
+          some: {
+            className: className,
+          },
+        },
+      })),
+    },
+  });
+
+  images = images
+    .filter(({ objects }) => {
+      const actualCounts = new Map();
+
+      objects.forEach((obj) => {
+        actualCounts.set(
+          obj.className,
+          (actualCounts.get(obj.className) || 0) + 1
+        );
+      });
+
+      for (const [className, expectedCount] of Object.entries(body)) {
+        if (actualCounts.get(className) == undefined) {
+          return false;
+        }
+        if (expectedCount == 0) {
+          return true;
+        }
+        if (actualCounts.get(className) !== expectedCount) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+    .map(({ videos: { videoName }, frameName }) => ({
+      videoName: videoName,
+      frameName: frameName,
+    }));
+
+  return images;
 }
 
 async function processStage(stage) {
   switch (stage.type) {
     case "text":
-      return await textQuery(stage.queryData.text, stage.topk);
+      return await textQuery(stage.queryData.text, stage.queryData.topk);
     case "image":
-      return await imageQuery(stage.queryData.image, stage.topk);
+      return await imageQuery(stage.queryData.image, stage.queryData.topk);
     case "objects":
-      return await objectsQuery(stage.queryData.objects);
+      return await objectsQuery(stage.queryData);
     default:
       console.warn(`Skipping unsupported stage type: ${stage.type}`);
   }
@@ -112,11 +191,15 @@ async function processStage(stage) {
 }
 
 export async function POST(request) {
-  const { query: stages } = request.body;
-  const maxObjectCalls = 2, maxTextImageCalls = 1;
+  const body = await request.json();
+  const { query: stages } = body;
+  const maxObjectCalls = 2,
+    maxTextImageCalls = 1;
 
   if (stages.length === 0) {
-    return [];
+    return new Response(JSON.stringify("No stage to process!"), {
+      status: 400,
+    });
   }
 
   let results = [];
@@ -165,20 +248,20 @@ export async function POST(request) {
     }
 
     // Wait for current batch of stages to complete
-    const stageResults = await Promise.all(stagePromises);
+    let stageResults = await Promise.all(stagePromises);
 
     // Process results
     for (const currentResults of stageResults) {
       if (isFirstValidStage) {
         results = currentResults;
         resultSet = new Set(
-          results.map((r) => `${r.videoName}:${r.frameName}`)
+          results.map(({ videoName, frameName }) => `${videoName}:${frameName}`)
         );
         isFirstValidStage = false;
       } else {
         const newResultSet = new Set();
         for (const result of currentResults) {
-          const id = `${result.videoName}:${r.frameName}`;
+          const id = `${result.videoName}:${result.frameName}`;
           if (resultSet.has(id)) {
             newResultSet.add(id);
           }
@@ -188,15 +271,15 @@ export async function POST(request) {
 
       // If no results match across stages, we can exit early
       if (resultSet.size === 0) {
-        return [];
+        return new Response(JSON.stringify([]), { status: 200 });
       }
     }
   }
 
   // Final filtering of results
-  results = results.filter((r) =>
-    resultSet.has(`${r.videoName}:${r.frameName}`)
+  results = results.filter(({ videoName, frameName }) =>
+    resultSet.has(`${videoName}:${frameName}`)
   );
 
-  return results;
+  return new Response(JSON.stringify(results), { status: 200 });
 }
