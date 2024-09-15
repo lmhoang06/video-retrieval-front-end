@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  memo,
+  useCallback,
+} from "react";
 import { Dialog, Typography, Button } from "@material-tailwind/react";
 import submitFrame from "@/libs/submit";
 import { useGallery } from "@/contexts/galleryContext";
@@ -81,13 +88,14 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   const { instance, accounts } = useMsal();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(true);
+  const [frameIdx, setFrameIdx] = useState(0);
 
   useEffect(() => {
     const { video_name: videoName, frame_idx: frameName } = imageData;
 
     async function get_bbox() {
       try {
-        let { status, data } = await axios.get(
+        const { status, data } = await axios.get(
           `/api/objects/info?videoName=${videoName}&frameName=${String(
             frameName
           ).padStart(3, "0")}`
@@ -114,7 +122,24 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       }
     }
 
+    async function getKeyframeIdx() {
+      try {
+        const { status, data } = await axios.get(
+          `/api/keyframeIdx?videoName=${videoName}&frameName=${String(
+            frameName
+          ).padStart(3, "0")}`
+        );
+
+        if (status === 200 || status === 302) {
+          setFrameIdx(data.frameIdx);
+        }
+      } catch (error) {
+        console.error("Error fetching bounding box data:", error);
+      }
+    }
+
     get_bbox();
+    getKeyframeIdx();
   }, [imageData]);
 
   const handleOnClick = useCallback(async () => {
@@ -222,6 +247,9 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         </Typography>
         <Typography variant="h4" color="blue">
           Frame name: {frameName}
+        </Typography>
+        <Typography variant="h4" color="blue">
+          Frame index: {frameIdx}
         </Typography>
         <Typography variant="h4" color="blue">
           Similarity score: {similarity_score}
