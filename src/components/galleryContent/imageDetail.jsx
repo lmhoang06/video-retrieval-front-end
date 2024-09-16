@@ -83,7 +83,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   } = imageData;
   const { sessionId } = useGallery();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
-  const [showObjects, setShowObjects] = useState(true);
+  const [showObjects, setShowObjects] = useState(false);
   const [frameIdx, setFrameIdx] = useState(0);
 
   useEffect(() => {
@@ -121,9 +121,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     async function getKeyframeIdx() {
       try {
         const { status, data } = await axios.get(
-          `/api/keyframeIdx?videoName=${videoName}&frameName=${String(
-            frameName
-          ).padStart(3, "0")}`
+          `/api/metadata/${videoName}/${String(frameName).padStart(3, "0")}`
         );
 
         if (status === 200 || status === 302) {
@@ -193,9 +191,13 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         <Typography variant="h4" color="blue">
           Frame index: {frameIdx}
         </Typography>
-        <Typography variant="h4" color="blue">
-          Similarity score: {similarity_score}
-        </Typography>
+        {similarity_score ? (
+          <Typography variant="h4" color="blue">
+            Similarity score: {similarity_score}
+          </Typography>
+        ) : (
+          <></>
+        )}
         {/* Function button */}
         <div className="flex gap-2">
           <Button
