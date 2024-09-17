@@ -9,7 +9,7 @@ import {
   Typography,
   Card,
 } from "@material-tailwind/react";
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import TextQuery from "./textQuery";
 import ImageQuery from "./imageQuery";
 import ObjectsQuery from "./objectsQuery";
@@ -18,9 +18,9 @@ const StageInput = ({ stageName, className, onUpdate }) => {
   const [currentTab, setCurrentTab] = useState("text");
   const [textData, setTextData] = useState({});
   const [imageData, setImageData] = useState({});
-  const [objectData, setObjectData] = useState([]);
+  const [objectData, setObjectData] = useState({});
 
-  const getFormData = useCallback(() => {
+  const formData = useMemo(() => {
     switch (currentTab) {
       case "text":
         return { type: "text", queryData: textData };
@@ -33,51 +33,53 @@ const StageInput = ({ stageName, className, onUpdate }) => {
     }
   }, [currentTab, textData, imageData, objectData]);
 
-  onUpdate(getFormData());
+  useEffect(() => {
+    onUpdate(formData);
+  }, [formData, onUpdate]);
 
-  const handleTextDataUpdate = (topk, text) => {
+  const handleTextDataUpdate = useCallback((topk, text) => {
     setTextData({
       text: text,
       topk: topk,
     });
-    onUpdate(getFormData());
-  };
+  }, []);
 
-  const handleImageDataUpdate = (topk, image) => {
+  const handleImageDataUpdate = useCallback((topk, image) => {
     setImageData({
       image: image,
       topk: topk,
     });
-    onUpdate(getFormData());
-  };
+  }, []);
 
-  const handleObjectDataUpdate = (objects) => {
+  const handleObjectDataUpdate = useCallback((objects) => {
     setObjectData(
       objects.reduce(
         (acc, { className, number }) => ({ ...acc, [className]: number }),
         {}
       )
     );
-    onUpdate(getFormData());
-  };
+  }, []);
 
-  const queryType = [
-    {
-      label: "Text",
-      value: "text",
-      desc: <TextQuery onUpdate={handleTextDataUpdate} />,
-    },
-    {
-      label: "Image",
-      value: "image",
-      desc: <ImageQuery onUpdate={handleImageDataUpdate} />,
-    },
-    {
-      label: "Objects",
-      value: "objects",
-      desc: <ObjectsQuery onUpdate={handleObjectDataUpdate} />,
-    },
-  ];
+  const queryType = useMemo(
+    () => [
+      {
+        label: "Text",
+        value: "text",
+        desc: <TextQuery onUpdate={handleTextDataUpdate} />,
+      },
+      {
+        label: "Image",
+        value: "image",
+        desc: <ImageQuery onUpdate={handleImageDataUpdate} />,
+      },
+      {
+        label: "Objects",
+        value: "objects",
+        desc: <ObjectsQuery onUpdate={handleObjectDataUpdate} />,
+      },
+    ],
+    [handleTextDataUpdate, handleImageDataUpdate, handleObjectDataUpdate]
+  );
 
   return (
     <div className={className}>
@@ -89,7 +91,7 @@ const StageInput = ({ stageName, className, onUpdate }) => {
         >
           {stageName}
         </Typography>
-        <Tabs value="text">
+        <Tabs value={currentTab}>
           <TabsHeader
             className="bg-transparent border-2 border-light-blue-600"
             indicatorProps={{
@@ -100,7 +102,7 @@ const StageInput = ({ stageName, className, onUpdate }) => {
               <Tab
                 key={value}
                 value={value}
-                onClick={(e) => setCurrentTab(value)}
+                onClick={() => setCurrentTab(value)}
               >
                 {label}
               </Tab>

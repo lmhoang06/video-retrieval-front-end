@@ -22,7 +22,7 @@ const Pagination = memo(({ totalPages, active, setActive }) => {
   const next = useCallback(() => {
     if (active < totalPages) setActive((prev) => prev + 1);
   }, [active, totalPages, setActive]);
-  
+
   const prev = useCallback(() => {
     if (active > 1) setActive((prev) => prev - 1);
   }, [active, setActive]);
@@ -63,33 +63,44 @@ Pagination.displayName = "Pagination";
 
 const GalleryContent = () => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [currentImages, setCurrentImages] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const { imagesPerRow, imagesPerPage } = useGallery();
-  const { images } = useApp();
+  const { images, loadImages } = useApp();
   const totalPages = useMemo(
     () => Math.ceil(images.length / imagesPerPage),
     [images.length, imagesPerPage]
   );
 
   useEffect(() => {
-    if (images.length == 0) {
-      setCurrentPage(1);
-    }
-    if ((currentPage > totalPages) & (totalPages != 0)) {
+    if (images.length === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+    } else if (currentPage > totalPages && totalPages !== 0) {
       setCurrentPage(totalPages);
     }
   }, [images.length, currentPage, totalPages]);
+
+  useEffect(() => {
+    const loadCurrentImages = async () => {
+      if (images.length !== 0) {
+        const startIndex = (currentPage - 1) * imagesPerPage;
+        const imagesData = await loadImages(
+          startIndex,
+          startIndex + imagesPerPage
+        );
+        setCurrentImages(imagesData.filter((item) => !item?.loadError));
+      } else {
+        setCurrentImages([]);
+      }
+    };
+    loadCurrentImages();
+  }, [currentPage, imagesPerPage, images]);
 
   const handleOpenDetail = useCallback(
     (imageData) => setSelectedImage(imageData),
     []
   );
   const handleCloseDetail = useCallback(() => setSelectedImage(null), []);
-
-  const currentImages = useMemo(() => {
-    const startIndex = (currentPage - 1) * imagesPerPage;
-    return images.slice(startIndex, startIndex + imagesPerPage);
-  }, [currentPage, imagesPerPage, images]);
 
   if (images.length === 0) {
     return <NoImageFound />;

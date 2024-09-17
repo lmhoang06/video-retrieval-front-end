@@ -15,6 +15,7 @@ import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
+import YouTube from "react-youtube";
 
 const boxStyle = (box) => ({
   left: `${(box.x - box.w / 2) * 100}%`,
@@ -76,65 +77,42 @@ ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const {
-    video_name: videoName,
-    frame_idx: frameName,
-    similarity_score,
+    videoName,
+    frameName,
+    similarityScore,
     src,
   } = imageData;
   const { sessionId } = useGallery();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
-  const [frameIdx, setFrameIdx] = useState(0);
+  const [metadata, setMetadata] = useState({ frameIdx: 0, ptsTime: 0, watchId: "" });
 
   useEffect(() => {
-    const { video_name: videoName, frame_idx: frameName } = imageData;
-
-    async function get_bbox() {
+    const fetchData = async () => {
       try {
-        const { status, data } = await axios.get(
-          `/api/objects/info?videoName=${videoName}&frameName=${String(
-            frameName
-          ).padStart(3, "0")}`
-        );
+        const [bboxResponse, metadataResponse, watchUrlResponse] = await Promise.all([
+          axios.get(`/api/objects/info?videoName=${videoName}&frameName=${String(frameName).padStart(3, "0")}`),
+          axios.get(`/api/metadata/${videoName}/${String(frameName).padStart(3, "0")}`),
+          axios.get(`/api/metadata/${videoName}`)
+        ]);
 
-        if (status === 200 || status === 302) {
-          setBbox(
-            data.map(({ className, confidence, xywhn }) => {
-              let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
+        setBbox(bboxResponse.data.map(({ className, confidence, xywhn }) => {
+          let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
+          return { x, y, w, h, label: className, confidence };
+        }));
 
-              return {
-                x: x,
-                y: y,
-                w: w,
-                h: h,
-                label: className,
-                confidence: confidence,
-              };
-            })
-          );
-        }
+        setMetadata({
+          frameIdx: metadataResponse.data.frameIdx,
+          ptsTime: metadataResponse.data.ptsTime,
+          watchId: watchUrlResponse.data.watchUrl.split("v=")[1]
+        });
       } catch (error) {
-        console.error("Error fetching bounding box data:", error);
+        console.error("Error fetching data:", error);
       }
-    }
+    };
 
-    async function getKeyframeIdx() {
-      try {
-        const { status, data } = await axios.get(
-          `/api/metadata/${videoName}/${String(frameName).padStart(3, "0")}`
-        );
-
-        if (status === 200 || status === 302) {
-          setFrameIdx(data.frameIdx);
-        }
-      } catch (error) {
-        console.error("Error fetching bounding box data:", error);
-      }
-    }
-
-    get_bbox();
-    getKeyframeIdx();
-  }, [imageData]);
+    fetchData();
+  }, [videoName, frameName]);
 
   const handleSubmit = useCallback(() => {
     const data = submitFrame(videoName, frameName, sessionId);
@@ -189,11 +167,11 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           Frame name: {frameName}
         </Typography>
         <Typography variant="h4" color="blue">
-          Frame index: {frameIdx}
+          Frame index: {metadata.frameIdx}
         </Typography>
-        {similarity_score ? (
+        {similarityScore ? (
           <Typography variant="h4" color="blue">
-            Similarity score: {similarity_score}
+            Similarity score: {similarityScore}
           </Typography>
         ) : (
           <></>
@@ -219,6 +197,17 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             {showObjects ? "Hide objects" : "Show objects"}
           </Button>
         </div>
+        {/* <YouTube
+          videoId={metadata.watchId}
+          className="fixed bottom-0.5 right-0.5"
+          onReady={(event) => event.target.pauseVideo()}
+          opts={{
+            playerVars: {
+              autoplay: 1,
+              start: metadata.ptsTime,
+            },
+          }}
+        /> */}
       </div>
     </Dialog>
   );

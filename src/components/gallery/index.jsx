@@ -11,7 +11,7 @@ export default function Gallery({ className }) {
    *  {
    *    video_name: string
    *    frame_idx: int
-   *    similarity_score: double (in range [0; 1])
+   *    similarityScore: double (in range [0; 1])
    *    src: string or null
    *  }
    */

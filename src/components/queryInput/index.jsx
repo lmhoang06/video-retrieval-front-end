@@ -9,11 +9,10 @@ import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import StageInput from "./stageInput";
 import { IconPlus } from "@/libs/icon";
-import processQueryResult from "./processQueryResult";
 
 export default function InputQuery({ className }) {
   const [stages, setStages] = useState([]);
-  const { setImages } = useApp();
+  const { setImages, setAccessToken } = useApp();
   const { instance, accounts } = useMsal();
 
   const handleOnClick = async () => {
@@ -30,7 +29,7 @@ export default function InputQuery({ className }) {
     }
 
     let requestData = stages.map((stage) => stage.value);
-    let response = await axios.post("/api/query", {query:requestData});
+    let response = await axios.post("/api/query", { query: requestData });
 
     const accessToken = (
       await instance.acquireTokenSilent({
@@ -42,8 +41,19 @@ export default function InputQuery({ className }) {
     if (!accessToken) {
       throw new Error("Invalid access token!");
     }
-
-    setImages(await processQueryResult(accessToken, response.data, 16));
+    setAccessToken(accessToken);
+    
+    setImages(
+      response.data.map(({ videoName, frameName, distance }) => ({
+        videoName: videoName,
+        frameName: parseInt(
+          frameName.replace(".jpg", "").replace(/^0+/, ""),
+          10
+        ),
+        similarityScore: distance,
+        loaded: false,
+      }))
+    );
   };
 
   const handleUpdate = (stageId, value) => {
@@ -54,21 +64,22 @@ export default function InputQuery({ className }) {
         }
         return stage;
       });
-  
-  
+
       if (JSON.stringify(prevStages) !== JSON.stringify(updatedStages)) {
         return updatedStages;
       }
-  
+
       return prevStages;
     });
   };
-  
-  
 
   const handleAddStage = () => {
     const newId = Math.max(...stages.map((stage) => stage.id), 0) + 1;
-    const newStage = { id: newId, name: `Stage ${stages.length + 1}`, value: "" };
+    const newStage = {
+      id: newId,
+      name: `Stage ${stages.length + 1}`,
+      value: "",
+    };
     setStages((prevStages) => [...prevStages, newStage]);
   };
 

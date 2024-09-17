@@ -5,7 +5,7 @@ import { useGallery } from "@/contexts/galleryContext";
 import Image from "next/image";
 
 function ImageFrame({ imageData, onClick }) {
-  const { video_name, frame_idx, similarity_score, src } = imageData;
+  const { video_name, frame_idx, similarityScore, src } = imageData;
   const { imagesPerRow } = useGallery();
 
   return (
