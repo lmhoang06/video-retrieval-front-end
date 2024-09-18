@@ -223,7 +223,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             Show preview video
           </Button>
         </div>
-        {showPreviewVideo && (
+        {showPreviewVideo && metadata?.watchId && (
           <div className="fixed bottom-0.5 right-0.5">
             <IconButton
               variant="gradient"
@@ -236,12 +236,15 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             </IconButton>
             <YouTube
               videoId={metadata.watchId}
-              onReady={(event) => event.target.pauseVideo()}
+              onReady={(event) => {
+                const player = event.target;
+                player.seekTo(metadata.ptsTime, true);
+              }}
               opts={{
-                width: 640,
-                height: 360,
+                width: 480,
+                height: 270,
                 playerVars: {
-                  start: metadata.ptsTime,
+                  autoplay: 0,
                 },
               }}
             />
