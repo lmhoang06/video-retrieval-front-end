@@ -3,8 +3,10 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import axios from "axios";
 import pLimit from "p-limit";
+import ImageCache from "./imageCache";
 
 const AppContext = createContext(null);
+const cache = new ImageCache(4000);
 
 const MS_GRAPH_API = "https://graph.microsoft.com/v1.0";
 
@@ -44,7 +46,9 @@ const getImageData = async (
       }
     );
 
-    return URL.createObjectURL(response.data);
+    const objectURL = URL.createObjectURL(response.data);
+    cache.saveObjectURL(objectURL, videoName, frameName);
+    return objectURL;
   } catch (error) {
     console.error(`Error fetching image data: ${error.message}`);
     if (retryCount < 3) {
@@ -60,11 +64,14 @@ const loadImage = async (accessToken, imageData) => {
   if (imageData?.loaded) return imageData;
 
   try {
-    const objectURL = await getImageData(
-      accessToken,
-      imageData.videoName,
-      `${imageData.frameName.toString().padStart(3, "0")}.jpg`
-    );
+    const objectURL =
+      cache.getObjectURL(imageData.videoName, imageData.frameName) ||
+      (await getImageData(
+        accessToken,
+        imageData.videoName,
+        `${imageData.frameName.toString().padStart(3, "0")}.jpg`
+      ));
+      if (!objectURL) throw new Error("Get image failed!");
     return { ...imageData, src: objectURL, loaded: true };
   } catch (error) {
     console.error("Error loading image:", error);
