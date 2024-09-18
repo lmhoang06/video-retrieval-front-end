@@ -8,7 +8,12 @@ import React, {
   memo,
   useCallback,
 } from "react";
-import { Dialog, Typography, Button } from "@material-tailwind/react";
+import {
+  Dialog,
+  Typography,
+  Button,
+  IconButton,
+} from "@material-tailwind/react";
 import submitFrame from "@/libs/submit";
 import { useGallery } from "@/contexts/galleryContext";
 import { toast, Bounce } from "react-toastify";
@@ -76,35 +81,44 @@ const ImageWithBoundingBoxes = memo(
 ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
-  const {
-    videoName,
-    frameName,
-    similarityScore,
-    src,
-  } = imageData;
+  const { videoName, frameName, similarityScore, src } = imageData;
   const { sessionId } = useGallery();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
-  const [metadata, setMetadata] = useState({ frameIdx: 0, ptsTime: 0, watchId: "" });
+  const [metadata, setMetadata] = useState({
+    frameIdx: 0,
+    ptsTime: 0,
+    watchId: "",
+  });
+  const [showPreviewVideo, setShowPreviewVideo] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [bboxResponse, metadataResponse, watchUrlResponse] = await Promise.all([
-          axios.get(`/api/objects/info?videoName=${videoName}&frameName=${String(frameName).padStart(3, "0")}`),
-          axios.get(`/api/metadata/${videoName}/${String(frameName).padStart(3, "0")}`),
-          axios.get(`/api/metadata/${videoName}`)
-        ]);
+        const [bboxResponse, metadataResponse, watchUrlResponse] =
+          await Promise.all([
+            axios.get(
+              `/api/objects/info?videoName=${videoName}&frameName=${String(
+                frameName
+              ).padStart(3, "0")}`
+            ),
+            axios.get(
+              `/api/metadata/${videoName}/${String(frameName).padStart(3, "0")}`
+            ),
+            axios.get(`/api/metadata/${videoName}`),
+          ]);
 
-        setBbox(bboxResponse.data.map(({ className, confidence, xywhn }) => {
-          let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
-          return { x, y, w, h, label: className, confidence };
-        }));
+        setBbox(
+          bboxResponse.data.map(({ className, confidence, xywhn }) => {
+            let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
+            return { x, y, w, h, label: className, confidence };
+          })
+        );
 
         setMetadata({
           frameIdx: metadataResponse.data.frameIdx,
           ptsTime: metadataResponse.data.ptsTime,
-          watchId: watchUrlResponse.data.watchUrl.split("v=")[1]
+          watchId: watchUrlResponse.data.watchUrl.split("v=")[1],
         });
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -146,7 +160,10 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       open={open}
       size="xl"
       className="bg-gray-300 flex flex-row"
-      handler={handleOpen}
+      handler={() => {
+        setShowPreviewVideo(false);
+        handleOpen();
+      }}
       animate={{
         mount: { scale: 1, y: 0 },
         unmount: { scale: 1, y: 0 },
@@ -196,18 +213,40 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           >
             {showObjects ? "Hide objects" : "Show objects"}
           </Button>
+          <Button
+            color="blue"
+            ripple
+            variant="gradient"
+            size="sm"
+            onClick={() => setShowPreviewVideo(true)}
+          >
+            Show preview video
+          </Button>
         </div>
-        {/* <YouTube
-          videoId={metadata.watchId}
-          className="fixed bottom-0.5 right-0.5"
-          onReady={(event) => event.target.pauseVideo()}
-          opts={{
-            playerVars: {
-              autoplay: 1,
-              start: metadata.ptsTime,
-            },
-          }}
-        /> */}
+        {showPreviewVideo && (
+          <div className="fixed bottom-0.5 right-0.5">
+            <IconButton
+              variant="gradient"
+              color="red"
+              className="!absolute top-1 right-1 -translate-y-full w-5 h-5 rounded-full text-white z-40"
+              size="sm"
+              onClick={() => setShowPreviewVideo(false)}
+            >
+              &#10005;
+            </IconButton>
+            <YouTube
+              videoId={metadata.watchId}
+              onReady={(event) => event.target.pauseVideo()}
+              opts={{
+                width: 640,
+                height: 360,
+                playerVars: {
+                  start: metadata.ptsTime,
+                },
+              }}
+            />
+          </div>
+        )}
       </div>
     </Dialog>
   );

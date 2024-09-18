@@ -40,14 +40,11 @@ const getImageData = async (
       apiResult.data["@microsoft.graph.downloadUrl"],
       {
         timeout: 2500,
-        responseType: "arraybuffer",
+        responseType: "blob",
       }
     );
 
-    return `data:image/jpeg;base64,${Buffer.from(
-      response.data,
-      "binary"
-    ).toString("base64")}`;
+    return URL.createObjectURL(response.data);
   } catch (error) {
     console.error(`Error fetching image data: ${error.message}`);
     if (retryCount < 3) {

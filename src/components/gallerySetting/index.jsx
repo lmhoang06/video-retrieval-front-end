@@ -26,13 +26,10 @@ const getUserAvatar = async (accessToken) => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      responseType: "arraybuffer",
+      responseType: "blob",
       timeout: 2500,
     });
-    return `data:image/jpeg;base64,${Buffer.from(
-      response.data,
-      "binary"
-    ).toString("base64")}`;
+    return URL.createObjectURL(response.data);
   } catch (error) {
     console.error(`Error fetching image data: ${error.message}`);
     return undefined;

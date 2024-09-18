@@ -64,27 +64,28 @@ async function textQuery(query, topk) {
   }));
 }
 
-async function convertBase64ToImage(src) {
-  // Check if the string is a base64 string
-  const isBase64 = /^[A-Za-z0-9+\/=]+$/.test(src);
+const objectURLToBlob = async (objectURL) => {
+  try {
+    // Fetch the objectURL to get the Blob
+    const response = await fetch(objectURL);
+    
+    // Check if the response is OK
+    if (!response.ok) {
+      throw new Error(`Failed to fetch the object URL: ${response.statusText}`);
+    }
 
-  // Check if the string is a base64-encoded image
-  const isBase64Image = /^data:image\/(jpg|jpeg|png|gif|bmp|svg);base64,/.test(
-    src
-  );
-
-  if (isBase64 || isBase64Image) {
-    // Convert base64 string to image
-    return await fetch(src).then((res) => res.blob());
-  } else {
-    // Return original string
-    return src;
+    // Convert response to Blob
+    const blob = await response.blob();
+    return blob;
+  } catch (error) {
+    console.error("Error converting objectURL to Blob:", error);
+    return null;
   }
-}
+};
 
 async function imageQuery(query, topk) {
   const formData = new FormData();
-  formData.append("query", await convertBase64ToImage(query));
+  formData.append("query", await objectURLToBlob(query));
   formData.append("queryType", "image");
   formData.append("topk", topk);
 

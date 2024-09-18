@@ -5,7 +5,7 @@ import { useGallery } from "@/contexts/galleryContext";
 import Image from "next/image";
 
 function ImageFrame({ imageData, onClick }) {
-  const { video_name, frame_idx, similarityScore, src } = imageData;
+  const { videoName, frameIdx, similarityScore, src } = imageData;
   const { imagesPerRow } = useGallery();
 
   return (
@@ -18,7 +18,7 @@ function ImageFrame({ imageData, onClick }) {
     >
       <Image 
         src={src}
-        alt={`${video_name}_${frame_idx}`}
+        alt={`${videoName}_${frameIdx}`}
         width="0"
         height="0"
         className="w-full object-cover object-center"

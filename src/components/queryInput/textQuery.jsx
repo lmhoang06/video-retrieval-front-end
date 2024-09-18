@@ -47,6 +47,9 @@ const TextQuery = ({ className, onUpdate }) => {
         max={180}
         value={topk}
         onChange={(event) => setTopk(event.target.value)}
+        containerProps={{
+          className: "!min-w-0",
+        }}
       />
 
       {/* Text query */}
@@ -58,6 +61,9 @@ const TextQuery = ({ className, onUpdate }) => {
         title="Text query"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
+        containerProps={{
+          className: "!min-w-0",
+        }}
       />
 
       <Button
