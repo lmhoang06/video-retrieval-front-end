@@ -28,9 +28,6 @@ export default function InputQuery({ className }) {
       return;
     }
 
-    let requestData = stages.map((stage) => stage.value);
-    let response = await axios.post("/api/query", { query: requestData });
-
     const accessToken = (
       await instance.acquireTokenSilent({
         scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
@@ -42,18 +39,51 @@ export default function InputQuery({ className }) {
       throw new Error("Invalid access token!");
     }
     setAccessToken(accessToken);
-    
-    setImages(
-      response.data.map(({ videoName, frameName, distance }) => ({
-        videoName: videoName,
-        frameName: parseInt(
-          frameName.replace(".jpg", "").replace(/^0+/, ""),
-          10
-        ),
-        similarityScore: distance,
-        loaded: false,
-      }))
-    );
+
+    const requestData = stages.map((stage) => stage.value);
+    const response = await axios.post("/api/query", { query: requestData });
+
+    try {
+      const images = response.data.filter((value, index, arr) => {
+        const _value = JSON.stringify(value);
+        return (
+          index ===
+          arr.findIndex((obj) => {
+            return JSON.stringify(obj) === _value;
+          })
+        );
+      });
+      setImages(
+        images.map(({ videoName, frameName, distance }) => ({
+          videoName: videoName,
+          frameName: parseInt(
+            frameName.replace(".jpg", "").replace(/^0+/, ""),
+            10
+          ),
+          similarityScore: distance,
+          loaded: false,
+        }))
+      );
+      toast.success("Query Completed!", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    } catch (err) {
+      toast.error("Query Failed!", {
+        autoClose: 4500,
+        pauseOnHover: false,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+      console.error(err);
+      throw new Error("Query Image Failed!");
+    }
   };
 
   const handleUpdate = (stageId, value) => {

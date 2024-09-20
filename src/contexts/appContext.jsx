@@ -11,7 +11,7 @@ const cache = new ImageCache(4000);
 const MS_GRAPH_API = "https://graph.microsoft.com/v1.0";
 
 const DRIVE_ID_LIST = [
-  "b!0y2sxeQGV0-UPjZAgg0zL6ijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - LMH (L01 -> L12)
+  "b!0y2sxeQGV0-UPjZAgg0zL6ijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - LMH (L01 -> L16)
   // "b!C7MJtUkO10-XYMQNroV5OKijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - THMH
 ];
 
@@ -24,15 +24,16 @@ const getImageData = async (
   if (!accessToken) throw new Error("No access token available");
 
   const l_id = parseInt(videoName.slice(1, 3), 10);
-  if (12 < l_id) return null;
+  if (16 < l_id) return null;
 
-  const DRIVE_ID = l_id <= 12 ? DRIVE_ID_LIST[0] : DRIVE_ID_LIST[1];
+  const DRIVE_ID = l_id <= 16 ? DRIVE_ID_LIST[0] : DRIVE_ID_LIST[1];
   try {
     const apiResult = await axios.get(
       `${MS_GRAPH_API}/drives/${DRIVE_ID}/root:/AIC2024/Keyframes/${videoName}/${frameName}?select=@microsoft.graph.downloadUrl`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json;odata.metadata=none" // for reduce response payload
         },
         timeout: 2500,
       }
