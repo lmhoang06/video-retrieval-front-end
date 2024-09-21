@@ -104,7 +104,7 @@ export function AppProvider({ children }) {
     async (startIndex, endIndex) => {
       const loadedImages = await loadImagesList(
         accessToken,
-        images.slice(startIndex, endIndex + 1)
+        images.slice(startIndex, endIndex)
       );
 
       setImages((prevImages) => {
