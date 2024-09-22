@@ -15,7 +15,7 @@ import React, { useState, useEffect, memo } from "react";
 import axios from "axios";
 
 const ObjectChosenInfo = memo(
-  ({ className, objectClassName, numberOfObject }) => {
+  ({ className, objectClassName, numberOfObject, onChange }) => {
     return (
       <div className={className}>
         <div className="flex flex-row items-center h-7">
@@ -29,6 +29,7 @@ const ObjectChosenInfo = memo(
               min={0}
               max={999}
               defaultValue={numberOfObject}
+              onChange={(event) => onChange(event.target.value)}
               className="!border !border-gray-400 !p-0.5 text-center bg-white text-gray-900 ring-4 ring-transparent placeholder:text-gray-500 placeholder:opacity-100 focus:!border-gray-900 focus:!border-t-gray-900 focus:ring-gray-900/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               labelProps={{
                 className: "hidden",
@@ -75,6 +76,15 @@ function ObjectsQuery({ className, onUpdate }) {
               <ObjectChosenInfo
                 objectClassName={className}
                 numberOfObject={number}
+                onChange={(newValue) => {
+                  setChosenObjects((prev) => [
+                    ...prev.filter(({ className: cn }) => cn != className),
+                    {
+                      className: className,
+                      number: newValue,
+                    },
+                  ]);
+                }}
               />
             }
             onClose={() =>

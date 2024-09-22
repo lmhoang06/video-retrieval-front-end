@@ -1,7 +1,7 @@
 "use client";
 
 import { Input, Button, Card, ButtonGroup } from "@material-tailwind/react";
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
 
