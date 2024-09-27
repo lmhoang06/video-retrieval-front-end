@@ -36,6 +36,7 @@
 
 import axios from "axios";
 import objectsQuery from "@/app/api/objects/query/processObjectQuery";
+import metadataQuery from "@/app/api/metadata/query/processMetadataQuery";
 
 async function textQuery(query, topk) {
   const formData = new FormData();
@@ -68,7 +69,7 @@ const objectURLToBlob = async (objectURL) => {
   try {
     // Fetch the objectURL to get the Blob
     const response = await fetch(objectURL);
-    
+
     // Check if the response is OK
     if (!response.ok) {
       throw new Error(`Failed to fetch the object URL: ${response.statusText}`);
@@ -118,6 +119,8 @@ async function processStage(stage) {
       return await imageQuery(stage.queryData.image, stage.queryData.topk);
     case "objects":
       return await objectsQuery(stage.queryData);
+    case "metadata":
+      return await metadataQuery(stage.queryData);
     default:
       console.warn(`Skipping unsupported stage type: ${stage.type}`);
   }
@@ -129,7 +132,8 @@ export async function POST(request) {
   const body = await request.json();
   const { query: stages } = body;
   const maxObjectCalls = 2,
-    maxTextImageCalls = 1;
+    maxTextImageCalls = 1,
+    maxMetadataCalls = 2;
 
   if (stages.length === 0) {
     return new Response(JSON.stringify("No stage to process!"), {
@@ -143,7 +147,7 @@ export async function POST(request) {
 
   // Group stages by type
   const groupedStages = stages.reduce((acc, stage) => {
-    if (["text", "image", "objects"].includes(stage.type)) {
+    if (["text", "image", "objects", "metadata"].includes(stage.type)) {
       acc[stage.type] = acc[stage.type] || [];
       acc[stage.type].push(stage);
     }
@@ -154,18 +158,32 @@ export async function POST(request) {
   while (Object.keys(groupedStages).length > 0) {
     const stagePromises = [];
 
+    // Process metadata queries
+    for (
+      let i = 0;
+      i < maxMetadataCalls &&
+      groupedStages?.metadata &&
+      groupedStages?.metadata.length > 0;
+      i++
+    ) {
+      const metadataStage = groupedStages.metadata.shift();
+      stagePromises.push(processStage(metadataStage));
+    }
+    if (groupedStages?.metadata && groupedStages.metadata.length === 0)
+      delete groupedStages.metadata;
+
     // Process objects queries
     for (
       let i = 0;
       i < maxObjectCalls &&
-      groupedStages.objects &&
-      groupedStages.objects.length > 0;
+      groupedStages?.objects &&
+      groupedStages?.objects.length > 0;
       i++
     ) {
       const objectsStage = groupedStages.objects.shift();
       stagePromises.push(processStage(objectsStage));
     }
-    if (groupedStages.objects && groupedStages.objects.length === 0)
+    if (groupedStages?.objects && groupedStages.objects.length === 0)
       delete groupedStages.objects;
 
     // Process text or image queries

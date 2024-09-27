@@ -45,7 +45,7 @@ const ObjectChosenInfo = memo(
   }
 );
 
-ObjectChosenInfo.displayName = "ObjectChosenInfo;";
+ObjectChosenInfo.displayName = "ObjectChosenInfo";
 
 function ObjectsQuery({ className, onUpdate }) {
   const [chosenObjects, setChosenObjects] = useState([]);
