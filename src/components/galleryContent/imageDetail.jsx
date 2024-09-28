@@ -95,7 +95,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [bboxResponse, metadataResponse, watchUrlResponse] =
+        const [bboxResponse, metadataResponse, videoMetadataResponse] =
           await Promise.all([
             axios.get(
               `/api/objects/info?videoName=${videoName}&frameName=${String(
@@ -118,7 +118,8 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         setMetadata({
           frameIdx: metadataResponse.data.frameIdx,
           ptsTime: metadataResponse.data.ptsTime,
-          watchId: watchUrlResponse.data.watchUrl.split("v=")[1],
+          watchId: videoMetadataResponse.data.watchUrl.split("v=")[1],
+          publishDate: videoMetadataResponse.data.publishDate,
         });
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -186,12 +187,15 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         <Typography variant="h4" color="blue">
           Frame index: {metadata.frameIdx}
         </Typography>
-        {similarityScore ? (
+        {similarityScore && (
           <Typography variant="h4" color="blue">
             Similarity score: {similarityScore}
           </Typography>
-        ) : (
-          <></>
+        )}
+        {metadata?.publishDate && (
+          <Typography variant="h4" color="blue">
+            Publish date: {metadata.publishDate}
+          </Typography>
         )}
         {/* Function button */}
         <div className="flex gap-2">
