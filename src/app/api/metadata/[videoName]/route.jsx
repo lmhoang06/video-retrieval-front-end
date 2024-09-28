@@ -1,6 +1,6 @@
 import { prisma } from "@/app/api/metadata/database";
 
-export async function GET({ params }) {
+export async function GET(request, { params }) {
   const videoName = params.videoName;
 
   let results = await prisma.videoMetadata.findFirst({
