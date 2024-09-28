@@ -194,7 +194,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         )}
         {metadata?.publishDate && (
           <Typography variant="h4" color="blue">
-            Publish date: {metadata.publishDate}
+            Publish date: {(new Date(metadata.publishDate)).toLocaleDateString()}
           </Typography>
         )}
         {/* Function button */}
