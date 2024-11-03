@@ -94,7 +94,7 @@ const GalleryContent = () => {
       }
     };
     loadCurrentImages();
-  }, [currentPage, imagesPerPage, images]);
+  }, [currentPage, imagesPerPage, images, loadImages]);
 
   const handleOpenDetail = useCallback(
     (imageData) => setSelectedImage(imageData),

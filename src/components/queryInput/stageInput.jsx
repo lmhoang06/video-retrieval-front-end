@@ -91,7 +91,12 @@ const StageInput = ({ stageName, className, onUpdate }) => {
         desc: <MetadataQuery onUpdate={handleMetadataDataUpdate} />,
       },
     ],
-    [handleTextDataUpdate, handleImageDataUpdate, handleObjectDataUpdate]
+    [
+      handleTextDataUpdate,
+      handleImageDataUpdate,
+      handleObjectDataUpdate,
+      handleMetadataDataUpdate,
+    ]
   );
 
   return (
