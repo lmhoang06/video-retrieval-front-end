@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Settings from "../settings";
 import InputQuery from "../queryInput";
 import { Card } from "@material-tailwind/react";
 import Image from "next/image";
@@ -21,9 +20,6 @@ export default function Sidebar({ className }) {
             quality={75}
           />
         </div>
-        {/* <div>
-          <Settings />
-        </div> */}
       </div>
 
       {/* Input query */}

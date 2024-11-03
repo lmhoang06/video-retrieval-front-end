@@ -12,7 +12,7 @@ const MS_GRAPH_API = "https://graph.microsoft.com/v1.0";
 
 const DRIVE_ID_LIST = [
   "b!0y2sxeQGV0-UPjZAgg0zL6ijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - LMH (L01 -> L22)
-  "b!C7MJtUkO10-XYMQNroV5OKijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - THMH (L23 -> L24)
+  "b!C7MJtUkO10-XYMQNroV5OKijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - THMH (L23 -> L30)
 ];
 
 const getImageData = async (
@@ -91,14 +91,6 @@ export function AppProvider({ children }) {
   const [images, setImages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [accessToken, setAccessToken] = useState("");
-  const [settings, setSettings] = useState({
-    DRES: {
-      username: process.env.AIC_USERNAME,
-      password: process.env.AIC_PASSWORD,
-      Login_URL: process.env.DRES_LOGIN_URL,
-      Submit_URL: process.env.DRES_SUBMIT_URL,
-    },
-  });
 
   const loadImages = useCallback(
     async (startIndex, endIndex) => {
@@ -133,8 +125,6 @@ export function AppProvider({ children }) {
     setSessionId,
     accessToken,
     setAccessToken,
-    settings,
-    setSettings,
     loadImages,
   };
 
