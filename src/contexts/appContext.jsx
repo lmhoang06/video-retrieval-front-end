@@ -24,7 +24,6 @@ const getImageData = async (
   if (!accessToken) throw new Error("No access token available");
 
   const l_id = parseInt(videoName.slice(1, 3), 10);
-  if (24 < l_id) return null;
 
   const DRIVE_ID = l_id <= 22 ? DRIVE_ID_LIST[0] : DRIVE_ID_LIST[1];
   try {
@@ -72,7 +71,7 @@ const loadImage = async (accessToken, imageData) => {
         imageData.videoName,
         `${imageData.frameName.toString().padStart(3, "0")}.jpg`
       ));
-      if (!objectURL) throw new Error("Get image failed!");
+      if (!objectURL) throw new Error(`Get image ${imageData.videoName}-${imageData.frameName} failed!`);
     return { ...imageData, src: objectURL, loaded: true };
   } catch (error) {
     console.error("Error loading image:", error);
