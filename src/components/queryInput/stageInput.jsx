@@ -13,14 +13,12 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import TextQuery from "./textQuery";
 import ImageQuery from "./imageQuery";
 import ObjectsQuery from "./objectsQuery";
-import MetadataQuery from "./metadataQuery";
 
 const StageInput = ({ stageName, className, onUpdate }) => {
   const [currentTab, setCurrentTab] = useState("text");
   const [textData, setTextData] = useState({});
   const [imageData, setImageData] = useState({});
   const [objectData, setObjectData] = useState({});
-  const [metadataData, setMetadataData] = useState({});
 
   const formData = useMemo(() => {
     switch (currentTab) {
@@ -30,12 +28,10 @@ const StageInput = ({ stageName, className, onUpdate }) => {
         return { type: "image", queryData: imageData };
       case "objects":
         return { type: "objects", queryData: objectData };
-      case "metadata":
-        return { type: "metadata", queryData: metadataData };
       default:
         return null;
     }
-  }, [currentTab, textData, imageData, objectData, metadataData]);
+  }, [currentTab, textData, imageData, objectData]);
 
   useEffect(() => {
     onUpdate(formData);
@@ -64,10 +60,6 @@ const StageInput = ({ stageName, className, onUpdate }) => {
     );
   }, []);
 
-  const handleMetadataDataUpdate = useCallback((metadataQuery) => {
-    setMetadataData(metadataQuery);
-  }, []);
-
   const queryType = useMemo(
     () => [
       {
@@ -85,17 +77,11 @@ const StageInput = ({ stageName, className, onUpdate }) => {
         value: "objects",
         desc: <ObjectsQuery onUpdate={handleObjectDataUpdate} />,
       },
-      {
-        label: "Metadata",
-        value: "metadata",
-        desc: <MetadataQuery onUpdate={handleMetadataDataUpdate} />,
-      },
     ],
     [
       handleTextDataUpdate,
       handleImageDataUpdate,
       handleObjectDataUpdate,
-      handleMetadataDataUpdate,
     ]
   );
 

@@ -122,8 +122,6 @@ export function AppProvider({ children }) {
     setImages,
     sessionId,
     setSessionId,
-    accessToken,
-    setAccessToken,
     loadImages,
   };
 

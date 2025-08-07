@@ -35,8 +35,6 @@
  */
 
 import axios from "axios";
-import objectsQuery from "@/app/api/objects/query/processObjectQuery";
-import metadataQuery from "@/app/api/metadata/query/processMetadataQuery";
 
 async function textQuery(query, topk) {
   const formData = new FormData();
@@ -117,10 +115,6 @@ async function processStage(stage) {
       return await textQuery(stage.queryData.text, stage.queryData.topk);
     case "image":
       return await imageQuery(stage.queryData.image, stage.queryData.topk);
-    case "objects":
-      return await objectsQuery(stage.queryData);
-    case "metadata":
-      return await metadataQuery(stage.queryData);
     default:
       console.warn(`Skipping unsupported stage type: ${stage.type}`);
   }
@@ -132,8 +126,7 @@ export async function POST(request) {
   const body = await request.json();
   const { query: stages } = body;
   const maxObjectCalls = 2,
-    maxTextImageCalls = 1,
-    maxMetadataCalls = 2;
+    maxTextImageCalls = 1;
 
   if (stages.length === 0) {
     return new Response(JSON.stringify("No stage to process!"), {
@@ -157,20 +150,6 @@ export async function POST(request) {
   // Process grouped stages
   while (Object.keys(groupedStages).length > 0) {
     const stagePromises = [];
-
-    // Process metadata queries
-    for (
-      let i = 0;
-      i < maxMetadataCalls &&
-      groupedStages?.metadata &&
-      groupedStages?.metadata.length > 0;
-      i++
-    ) {
-      const metadataStage = groupedStages.metadata.shift();
-      stagePromises.push(processStage(metadataStage));
-    }
-    if (groupedStages?.metadata && groupedStages.metadata.length === 0)
-      delete groupedStages.metadata;
 
     // Process objects queries
     for (

@@ -3,7 +3,6 @@
 import { Button, Card, IconButton } from "@material-tailwind/react";
 import React, { useState } from "react";
 import { useApp } from "@/contexts/appContext";
-import { useMsal } from "@azure/msal-react";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,8 +11,7 @@ import { IconPlus } from "@/libs/icon";
 
 export default function InputQuery({ className }) {
   const [stages, setStages] = useState([]);
-  const { setImages, setAccessToken } = useApp();
-  const { instance, accounts } = useMsal();
+  const { setImages } = useApp();
 
   const handleOnClick = async () => {
     if (stages.length == 0) {
@@ -27,18 +25,6 @@ export default function InputQuery({ className }) {
       });
       return;
     }
-
-    const accessToken = (
-      await instance.acquireTokenSilent({
-        scopes: ["User.ReadBasic.All", "Files.ReadWrite.All"],
-        account: accounts[0],
-      })
-    )?.accessToken;
-
-    if (!accessToken) {
-      throw new Error("Invalid access token!");
-    }
-    setAccessToken(accessToken);
 
     const requestData = stages.map((stage) => stage.value);
     const response = await axios.post("/api/query", { query: requestData });

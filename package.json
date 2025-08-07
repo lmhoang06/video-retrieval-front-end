@@ -4,15 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 7000",
-    "build": "wget -q -O ./prisma/metadata/AIC2024_Metadata_SQLite_L01_to_L30.db https://github.com/lmhoang06/falchion-client/raw/main/prisma/metadata/AIC2024_Metadata_SQLite_L01_to_L30.db && wget -q -O ./prisma/objects/AIC2024_Objects_SQLite_L01_to_L30.db https://github.com/lmhoang06/falchion-client/raw/main/prisma/objects/AIC2024_Objects_SQLite_L01_to_L30.db && pnpm exec prisma generate --schema=./prisma/objects/schema.prisma && pnpm exec prisma generate --schema=./prisma/metadata/schema.prisma && next build",
+    "build": "next build",
     "start": "next start -p $PORT",
     "lint": "next lint"
   },
   "dependencies": {
-    "@azure/msal-browser": "^3.20.0",
-    "@azure/msal-react": "^2.0.22",
     "@material-tailwind/react": "^2.1.9",
-    "@prisma/client": "5.19.1",
     "axios": "^1.7.2",
     "csv-parse": "^5.5.6",
     "eslint": "8.57.0",
@@ -24,16 +21,13 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-toastify": "^10.0.5",
-    "react-youtube": "^10.1.0",
-    "sharp": "^0.33.4",
-    "sqlite3": "^5.1.7"
+    "sharp": "^0.33.4"
   },
   "devDependencies": {
     "@types/node": "22.5.1",
     "@types/react": "^18.3.3",
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.38",
-    "prisma": "^5.19.1",
     "tailwindcss": "^3.4.4"
   }
 }

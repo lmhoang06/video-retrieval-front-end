@@ -20,7 +20,6 @@ import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
-import YouTube from "react-youtube";
 
 const boxStyle = (box) => ({
   left: `${(box.x - box.w / 2) * 100}%`,
@@ -85,28 +84,16 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   const { sessionId } = useGallery();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
-  const [metadata, setMetadata] = useState({
-    frameIdx: 0,
-    ptsTime: 0,
-    watchId: "",
-  });
   const [showPreviewVideo, setShowPreviewVideo] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [bboxResponse, metadataResponse, videoMetadataResponse] =
-          await Promise.all([
-            axios.get(
-              `/api/objects/info?videoName=${videoName}&frameName=${String(
-                frameName
-              ).padStart(3, "0")}`
-            ),
-            axios.get(
-              `/api/metadata/${videoName}/${String(frameName).padStart(3, "0")}`
-            ),
-            axios.get(`/api/metadata/${videoName}`),
-          ]);
+        const bboxResponse = await axios.get(
+          `/api/objects/info?videoName=${videoName}&frameName=${String(
+            frameName
+          ).padStart(3, "0")}`
+        );
 
         setBbox(
           bboxResponse.data.map(({ className, confidence, xywhn }) => {
@@ -114,13 +101,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             return { x, y, w, h, label: className, confidence };
           })
         );
-
-        setMetadata({
-          frameIdx: metadataResponse.data.frameIdx,
-          ptsTime: metadataResponse.data.ptsTime,
-          watchId: videoMetadataResponse.data.watchUrl.split("v=")[1],
-          publishDate: videoMetadataResponse.data.publishDate,
-        });
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -185,16 +165,11 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           Frame name: {frameName}
         </Typography>
         <Typography variant="h4" color="blue">
-          Frame index: {metadata.frameIdx}
+          Frame index: Unknown at now
         </Typography>
         {similarityScore && (
           <Typography variant="h4" color="blue">
             Similarity score: {similarityScore}
-          </Typography>
-        )}
-        {metadata?.publishDate && (
-          <Typography variant="h4" color="blue">
-            Publish date: {(new Date(metadata.publishDate)).toLocaleDateString()}
           </Typography>
         )}
         {/* Function button */}
@@ -227,7 +202,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             Show preview video
           </Button>
         </div>
-        {showPreviewVideo && metadata?.watchId && (
+        {showPreviewVideo && (
           <div className="fixed bottom-0.5 right-0.5">
             <IconButton
               variant="gradient"
@@ -238,20 +213,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             >
               &#10005;
             </IconButton>
-            <YouTube
-              videoId={metadata.watchId}
-              onReady={(event) => {
-                const player = event.target;
-                player.seekTo(metadata.ptsTime, true);
-              }}
-              opts={{
-                width: 480,
-                height: 270,
-                playerVars: {
-                  autoplay: 0,
-                },
-              }}
-            />
           </div>
         )}
       </div>
