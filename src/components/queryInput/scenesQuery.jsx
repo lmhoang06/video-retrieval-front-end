@@ -14,7 +14,7 @@ function ScenesQuery({ className, onUpdate }) {
 
   useEffect(() => {
     const args = {
-      text_query: textQuery,
+      query: textQuery,
       top_k: normalizedTopK,
     };
     onUpdate?.({ type: "scenes", args });

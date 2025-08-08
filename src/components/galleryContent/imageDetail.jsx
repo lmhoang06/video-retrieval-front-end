@@ -85,13 +85,14 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
   const [showPreviewVideo, setShowPreviewVideo] = useState(false);
+  const FPS = 25;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const bboxResponse = await axios.get(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/${videoName}-${frameIndex}`
-      );
+        );
 
         setBbox(
           bboxResponse.data.objects.map(({ class_name: className, bbox_xywhn: xywhn, confidence }) => {
@@ -133,6 +134,9 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
       });
     }
   }, [frameIndex, videoName, sessionId]);
+
+  // Add video source URL
+  const videoSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/${videoName}`;
 
   return (
     <Dialog
@@ -193,16 +197,25 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           </Button>
         </div>
         {showPreviewVideo && (
-          <div className="fixed bottom-0.5 right-0.5">
+          <div className="fixed bottom-1 right-1">
             <IconButton
               variant="gradient"
               color="red"
-              className="!absolute top-1 right-1 -translate-y-full w-5 h-5 rounded-full text-white z-40"
+              className="!absolute top-0.5 right-0.5 -translate-y-full w-5 h-5 rounded-full text-white z-40"
               size="sm"
               onClick={() => setShowPreviewVideo(false)}
             >
               &#10005;
             </IconButton>
+            <video
+              src={videoSrc}
+              controls
+              autoPlay
+              onLoadedMetadata={(e) => {
+                e.currentTarget.currentTime = frameIndex / FPS;
+              }}
+              className="w-[36rem] h-auto mt-1"
+            />
           </div>
         )}
       </div>

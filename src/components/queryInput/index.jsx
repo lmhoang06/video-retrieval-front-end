@@ -41,7 +41,7 @@ export default function InputQuery({ className }) {
 
     if (type === "scenes" || type === "asr") {
       const hasText =
-        typeof args.text_query === "string" && args.text_query.trim().length > 0;
+        typeof args.query === "string" && args.query.trim().length > 0;
       if (!hasText) return `${stage.name}: Text query is required.`;
       if (ensureTopK < 16) return `${stage.name}: top_k must be at least 16.`;
       return null;
@@ -171,9 +171,9 @@ export default function InputQuery({ className }) {
         </Button>
       </div>
 
-      <div className="gap-4 p-2 max-h-[77vh] overflow-y-auto">
+      <div className="p-2 max-h-[77vh] overflow-y-auto">
         {stages.map((stage) => (
-          <div key={stage.id} className="relative">
+          <div key={stage.id} className="relative mt-4">
             <IconButton
               variant="gradient"
               color="red"

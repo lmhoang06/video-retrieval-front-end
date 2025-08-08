@@ -14,7 +14,7 @@ function AsrQuery({ className, onUpdate }) {
 
   useEffect(() => {
     const args = {
-      text_query: textQuery,
+      query: textQuery,
       top_k: normalizedTopK,
     };
     onUpdate?.({ type: "asr", args });
