@@ -79,13 +79,77 @@ const ImageWithBoundingBoxes = memo(
 
 ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
+const videosWith30FPS = [
+  'L21_V001',
+  'L21_V002',
+  'L21_V005',
+  'L21_V006',
+  'L21_V007',
+  'L21_V012',
+  'L21_V013',
+  'L21_V014',
+  'L21_V015',
+  'L21_V016',
+  'L21_V019',
+  'L21_V021',
+  'L21_V022',
+  'L21_V023',
+  'L21_V026',
+  'L21_V027',
+  'L21_V028',
+  'L21_V029',
+  'L21_V030',
+  'L22_V001',
+  'L22_V004',
+  'L22_V005',
+  'L22_V006',
+  'L22_V011',
+  'L22_V012',
+  'L22_V013',
+  'L22_V014',
+  'L22_V015',
+  'L22_V018',
+  'L22_V019',
+  'L22_V020',
+  'L22_V021',
+  'L22_V022',
+  'L22_V025',
+  'L22_V026',
+  'L22_V027',
+  'L22_V028',
+  'L22_V029',
+  'L24_V017',
+  'L24_V019',
+  'L24_V020',
+  'L24_V021',
+  'L24_V022',
+  'L24_V023',
+  'L24_V024',
+  'L24_V025',
+  'L24_V027',
+  'L24_V028',
+  'L24_V029',
+  'L24_V030',
+  'L24_V031',
+  'L24_V033',
+  'L24_V035',
+  'L24_V036',
+  'L24_V037',
+  'L24_V038',
+  'L24_V039',
+  'L24_V040',
+  'L24_V041',
+  'L24_V042',
+  'L24_V045'
+];
+
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const { videoName, frameName: frameIndex, src } = imageData;
   const { sessionId } = useGallery();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
   const [showPreviewVideo, setShowPreviewVideo] = useState(false);
-  const FPS = 25;
+  const FPS = videoName === "L24_V044" ? 26.438 : (videosWith30FPS.includes(videoName) ? 30 : 25);
 
   useEffect(() => {
     const fetchData = async () => {
