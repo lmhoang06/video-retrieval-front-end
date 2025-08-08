@@ -90,13 +90,11 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     const fetchData = async () => {
       try {
         const bboxResponse = await axios.get(
-          `/api/objects/info?videoName=${videoName}&frameName=${String(
-            frameName
-          ).padStart(3, "0")}`
-        );
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/${videoName}-${frameName}`
+      );
 
         setBbox(
-          bboxResponse.data.map(({ className, confidence, xywhn }) => {
+          bboxResponse.data.map(({ class_name: className, bbox_xywhn: xywhn, confidence }) => {
             let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
             return { x, y, w, h, label: className, confidence };
           })
