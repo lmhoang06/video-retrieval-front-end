@@ -8,10 +8,47 @@ import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import StageInput from "./stageInput";
 import { IconPlus } from "@/libs/icon";
+import ObjectsQuery from "./objectsQuery";
 
 export default function InputQuery({ className }) {
   const [stages, setStages] = useState([]);
-  const { setImages } = useApp();
+  const [objectsCollapsed, setObjectsCollapsed] = useState(true);
+  const [objectsFilter, setObjectsFilter] = useState([]);
+  const { setImages, setQueryResult } = useApp();
+
+  const validateStage = (stage) => {
+    const { value } = stage || {};
+    if (!value || typeof value !== "object") {
+      return `"${stage?.name ?? "Stage"}" is empty.`;
+    }
+    const { type, args } = value;
+    if (!type || !args) return `"${stage.name}" is invalid.`;
+
+    const topK = parseInt(args.top_k, 10);
+    const ensureTopK = Number.isNaN(topK) ? 0 : topK;
+
+    if (type === "keyframes") {
+      const hasImg =
+        typeof args.image_id_query === "string" &&
+        args.image_id_query.trim().length > 0;
+      const hasText =
+        typeof args.text_query === "string" && args.text_query.trim().length > 0;
+      if (!hasImg && !hasText) return `${stage.name}: Provide Image ID or Text query.`;
+      if (hasImg && hasText) return `${stage.name}: Only one of Image ID or Text is allowed.`;
+      if (ensureTopK < 16) return `${stage.name}: top_k must be at least 16.`;
+      return null;
+    }
+
+    if (type === "scenes" || type === "asr") {
+      const hasText =
+        typeof args.text_query === "string" && args.text_query.trim().length > 0;
+      if (!hasText) return `${stage.name}: Text query is required.`;
+      if (ensureTopK < 16) return `${stage.name}: top_k must be at least 16.`;
+      return null;
+    }
+
+    return `${stage.name}: Unsupported query type "${type}".`;
+  };
 
   const handleOnClick = async () => {
     if (stages.length == 0) {
@@ -26,27 +63,41 @@ export default function InputQuery({ className }) {
       return;
     }
 
+    // Validate stages
+    for (const stage of stages) {
+      const error = validateStage(stage);
+      if (error) {
+        toast.error(error, {
+          autoClose: 4500,
+          pauseOnHover: false,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
+        return;
+      }
+    }
+
     const requestData = stages.map((stage) => stage.value);
-    const response = await axios.post("/api/query", { query: requestData });
+
+    // Objects filter is intentionally excluded from request payload for now
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`, 
+      requestData
+    );
 
     try {
-      const images = response.data.filter((value, index, arr) => {
-        const _value = JSON.stringify(value);
-        return (
-          index ===
-          arr.findIndex((obj) => {
-            return JSON.stringify(obj) === _value;
-          })
-        );
-      });
+      setQueryResult(response.data);
+      
+      const images = response.data["keyframes"] || [];
       setImages(
-        images.map(({ videoName, frameName, distance }) => ({
-          videoName: videoName,
+        images.map(keyframe_id => ({
+          videoName: keyframe_id.split("-")[0],
           frameName: parseInt(
-            frameName.replace(".jpg", "").replace(/^0+/, ""),
+            keyframe_id.split("-")[1],
             10
           ),
-          similarityScore: distance,
           loaded: false,
         }))
       );
@@ -94,7 +145,7 @@ export default function InputQuery({ className }) {
     const newStage = {
       id: newId,
       name: `Stage ${stages.length + 1}`,
-      value: "",
+      value: null,
     };
     setStages((prevStages) => [...prevStages, newStage]);
   };
@@ -148,6 +199,26 @@ export default function InputQuery({ className }) {
           >
             <IconPlus />
           </IconButton>
+        </div>
+
+        {/* Objects Query - single, collapsible, excluded from request */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-blue-gray-700">Objects Filter (optional)</span>
+            <Button
+              variant="text"
+              color="blue"
+              className="p-2"
+              onClick={() => setObjectsCollapsed((v) => !v)}
+            >
+              {objectsCollapsed ? "Expand" : "Collapse"}
+            </Button>
+          </div>
+          {!objectsCollapsed && (
+            <div className="mt-2">
+              <ObjectsQuery onUpdate={setObjectsFilter} />
+            </div>
+          )}
         </div>
       </div>
     </Card>

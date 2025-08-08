@@ -8,43 +8,21 @@ import ImageCache from "./imageCache";
 const AppContext = createContext(null);
 const cache = new ImageCache(4000);
 
-const MS_GRAPH_API = "https://graph.microsoft.com/v1.0";
-
-const DRIVE_ID_LIST = [
-  "b!0y2sxeQGV0-UPjZAgg0zL6ijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - LMH (L01 -> L22)
-  "b!C7MJtUkO10-XYMQNroV5OKijEoU73q5DuxNFsT_aO6GWFg1zpn0qTJyu2Zt16imE", // 10CL - THMH (L23 -> L30)
-];
-
 const getImageData = async (
-  accessToken,
   videoName,
   frameName,
   retryCount = 0
 ) => {
-  if (!accessToken) throw new Error("No access token available");
-
-  const l_id = parseInt(videoName.slice(1, 3), 10);
-
-  const DRIVE_ID = l_id <= 22 ? DRIVE_ID_LIST[0] : DRIVE_ID_LIST[1];
   try {
-    const apiResult = await axios.get(
-      `${MS_GRAPH_API}/drives/${DRIVE_ID}/root:/AIC2024/Keyframes/${videoName}/${frameName}?select=@microsoft.graph.downloadUrl`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/json;odata.metadata=none" // for reduce response payload
-        },
-        timeout: 2500,
-      }
-    );
-
-    const response = await axios.get(
-      apiResult.data["@microsoft.graph.downloadUrl"],
+    const { data: arrayBuffer } = await axios.get(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/keyframes/${videoName}-${frameName}`,
       {
         timeout: 2500,
-        responseType: "blob",
+        responseType: "arraybuffer",
       }
     );
+    const blob = new Blob([arrayBuffer], { type: "image/avif" });
+    const response = { data: blob };
 
     const objectURL = URL.createObjectURL(response.data);
     cache.saveObjectURL(objectURL, videoName, frameName);
@@ -60,16 +38,15 @@ const getImageData = async (
   }
 };
 
-const loadImage = async (accessToken, imageData) => {
+const loadImage = async (imageData) => {
   if (imageData?.loaded) return imageData;
 
   try {
     const objectURL =
       cache.getObjectURL(imageData.videoName, imageData.frameName) ||
       (await getImageData(
-        accessToken,
         imageData.videoName,
-        `${imageData.frameName.toString().padStart(3, "0")}.jpg`
+        imageData.frameName
       ));
       if (!objectURL) throw new Error(`Get image ${imageData.videoName}-${imageData.frameName} failed!`);
     return { ...imageData, src: objectURL, loaded: true };
@@ -79,22 +56,25 @@ const loadImage = async (accessToken, imageData) => {
   }
 };
 
-const loadImagesList = async (accessToken, images) => {
+const loadImagesList = async (images) => {
   const limit = pLimit(16);
   return await Promise.all(
-    images.map((imageData) => limit(() => loadImage(accessToken, imageData)))
+    images.map((imageData) => limit(() => loadImage(imageData)))
   );
 };
 
 export function AppProvider({ children }) {
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState([{
+    "videoName": "L23_V001",
+    "frameName": 2646,
+    "loaded": false,
+  }]);
   const [sessionId, setSessionId] = useState(null);
-  const [accessToken, setAccessToken] = useState("");
+  const [queryResult, setQueryResult] = useState([]);
 
   const loadImages = useCallback(
     async (startIndex, endIndex) => {
       const loadedImages = await loadImagesList(
-        accessToken,
         images.slice(startIndex, endIndex)
       );
 
@@ -114,7 +94,7 @@ export function AppProvider({ children }) {
 
       return loadedImages;
     },
-    [images, accessToken]
+    [images]
   );
 
   const value = {
@@ -123,6 +103,8 @@ export function AppProvider({ children }) {
     sessionId,
     setSessionId,
     loadImages,
+    queryResult,
+    setQueryResult,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -80,7 +80,7 @@ const ImageWithBoundingBoxes = memo(
 ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
-  const { videoName, frameName, similarityScore, src } = imageData;
+  const { videoName, frameName: frameIndex, src } = imageData;
   const { sessionId } = useGallery();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
@@ -90,12 +90,12 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     const fetchData = async () => {
       try {
         const bboxResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/${videoName}-${frameName}`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/${videoName}-${frameIndex}`
       );
 
         setBbox(
-          bboxResponse.data.map(({ class_name: className, bbox_xywhn: xywhn, confidence }) => {
-            let [x, y, w, h] = xywhn.split(",").map((val) => Number(val));
+          bboxResponse.data.objects.map(({ class_name: className, bbox_xywhn: xywhn, confidence }) => {
+            let [x, y, w, h] = xywhn;
             return { x, y, w, h, label: className, confidence };
           })
         );
@@ -105,10 +105,10 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     };
 
     fetchData();
-  }, [videoName, frameName]);
+  }, [videoName, frameIndex]);
 
   const handleSubmit = useCallback(() => {
-    const data = submitFrame(videoName, frameName, sessionId);
+    const data = submitFrame(videoName, frameIndex, sessionId);
     const status = data?.submission;
 
     if (status === "true" || status === "TRUE") {
@@ -132,7 +132,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         transition: Bounce,
       });
     }
-  }, [frameName, videoName, sessionId]);
+  }, [frameIndex, videoName, sessionId]);
 
   return (
     <Dialog
@@ -160,16 +160,8 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           Video name: {videoName}
         </Typography>
         <Typography variant="h4" color="blue">
-          Frame name: {frameName}
+          Frame index: {frameIndex}
         </Typography>
-        <Typography variant="h4" color="blue">
-          Frame index: Unknown at now
-        </Typography>
-        {similarityScore && (
-          <Typography variant="h4" color="blue">
-            Similarity score: {similarityScore}
-          </Typography>
-        )}
         {/* Function button */}
         <div className="flex gap-2">
           <Button
