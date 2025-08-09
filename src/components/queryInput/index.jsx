@@ -6,7 +6,7 @@ import { useApp } from "@/contexts/appContext";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
-import SubqueryInput from "./stageInput";
+import SubqueryInput from "./subqueryInput";
 import { IconPlus } from "@/libs/icon";
 import ObjectsQuery from "./objectsQuery";
 
