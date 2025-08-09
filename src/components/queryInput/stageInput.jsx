@@ -12,7 +12,7 @@ import KeyframesQuery from "./keyframesQuery";
 import ScenesQuery from "./scenesQuery";
 import AsrQuery from "./asrQuery";
 
-const StageInput = ({ stageName, className, onUpdate }) => {
+const SubqueryInput = ({ subqueryName, className, onUpdate }) => {
   const [currentTab, setCurrentTab] = useState("keyframes");
 
   const tabs = [
@@ -42,7 +42,7 @@ const StageInput = ({ stageName, className, onUpdate }) => {
           color="light-blue"
           className="w-full text-center text-lg mb-4"
         >
-          {stageName}
+          {subqueryName}
         </Typography>
         <Tabs value={currentTab}>
           <TabsHeader
@@ -69,4 +69,4 @@ const StageInput = ({ stageName, className, onUpdate }) => {
   );
 };
 
-export default memo(StageInput);
+export default memo(SubqueryInput);

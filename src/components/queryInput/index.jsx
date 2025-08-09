@@ -6,23 +6,23 @@ import { useApp } from "@/contexts/appContext";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
-import StageInput from "./stageInput";
+import SubqueryInput from "./stageInput";
 import { IconPlus } from "@/libs/icon";
 import ObjectsQuery from "./objectsQuery";
 
 export default function InputQuery({ className }) {
-  const [stages, setStages] = useState([]);
+  const [subqueries, setSubqueries] = useState([]);
   const [objectsCollapsed, setObjectsCollapsed] = useState(true);
   const [objectsFilter, setObjectsFilter] = useState([]);
   const { setImages, setQueryResult } = useApp();
 
-  const validateStage = (stage) => {
-    const { value } = stage || {};
+  const validateSubquery = (subquery) => {
+    const { value } = subquery || {};
     if (!value || typeof value !== "object") {
-      return `"${stage?.name ?? "Stage"}" is empty.`;
+      return `"${subquery?.name ?? "Subquery"}" is empty.`;
     }
     const { type, args } = value;
-    if (!type || !args) return `"${stage.name}" is invalid.`;
+    if (!type || !args) return `"${subquery.name}" is invalid.`;
 
     const topK = parseInt(args.top_k, 10);
     const ensureTopK = Number.isNaN(topK) ? 0 : topK;
@@ -33,25 +33,25 @@ export default function InputQuery({ className }) {
         args.image_id_query.trim().length > 0;
       const hasText =
         typeof args.text_query === "string" && args.text_query.trim().length > 0;
-      if (!hasImg && !hasText) return `${stage.name}: Provide Image ID or Text query.`;
-      if (hasImg && hasText) return `${stage.name}: Only one of Image ID or Text is allowed.`;
-      if (ensureTopK < 16) return `${stage.name}: top_k must be at least 16.`;
+      if (!hasImg && !hasText) return `${subquery.name}: Provide Image ID or Text query.`;
+      if (hasImg && hasText) return `${subquery.name}: Only one of Image ID or Text is allowed.`;
+      if (ensureTopK < 16) return `${subquery.name}: top_k must be at least 16.`;
       return null;
     }
 
     if (type === "scenes" || type === "asr") {
       const hasText =
         typeof args.query === "string" && args.query.trim().length > 0;
-      if (!hasText) return `${stage.name}: Text query is required.`;
-      if (ensureTopK < 16) return `${stage.name}: top_k must be at least 16.`;
+      if (!hasText) return `${subquery.name}: Text query is required.`;
+      if (ensureTopK < 16) return `${subquery.name}: top_k must be at least 16.`;
       return null;
     }
 
-    return `${stage.name}: Unsupported query type "${type}".`;
+    return `${subquery.name}: Unsupported query type "${type}".`;
   };
 
   const handleOnClick = async () => {
-    if (stages.length == 0) {
+    if (subqueries.length == 0) {
       toast.error("Please add at least one query!", {
         autoClose: 4500,
         pauseOnHover: false,
@@ -64,8 +64,8 @@ export default function InputQuery({ className }) {
     }
 
     // Validate stages
-    for (const stage of stages) {
-      const error = validateStage(stage);
+    for (const stage of subqueries) {
+      const error = validateSubquery(stage);
       if (error) {
         toast.error(error, {
           autoClose: 4500,
@@ -79,7 +79,7 @@ export default function InputQuery({ className }) {
       }
     }
 
-    const requestData = stages.map((stage) => stage.value);
+    const requestData = subqueries.map((stage) => stage.value);
 
     // Objects filter is intentionally excluded from request payload for now
     const response = await axios.post(
@@ -124,7 +124,7 @@ export default function InputQuery({ className }) {
   };
 
   const handleUpdate = (stageId, value) => {
-    setStages((prevStages) => {
+    setSubqueries((prevStages) => {
       const updatedStages = prevStages.map((stage) => {
         if (stage.id === stageId && stage.value !== value) {
           return { ...stage, value };
@@ -140,21 +140,21 @@ export default function InputQuery({ className }) {
     });
   };
 
-  const handleAddStage = () => {
-    const newId = Math.max(...stages.map((stage) => stage.id), 0) + 1;
-    const newStage = {
+  const handleAddSubquery = () => {
+    const newId = Math.max(...subqueries.map((stage) => stage.id), 0) + 1;
+    const newSubquery = {
       id: newId,
-      name: `Stage ${stages.length + 1}`,
+      name: `Subquery ${subqueries.length + 1}`,
       value: null,
     };
-    setStages((prevStages) => [...prevStages, newStage]);
+    setSubqueries((prevStages) => [...prevStages, newSubquery]);
   };
 
-  const handleRemoveStage = (stageId) => {
-    setStages((prevStages) =>
+  const handleRemoveSubquery = (subqueryId) => {
+    setSubqueries((prevStages) =>
       prevStages
-        .filter((stage) => stage.id !== stageId)
-        .map((stage, index) => ({ ...stage, name: `Stage ${index + 1}` }))
+        .filter((stage) => stage.id !== subqueryId)
+        .map((stage, index) => ({ ...stage, name: `Subquery ${index + 1}` }))
     );
   };
 
@@ -172,19 +172,19 @@ export default function InputQuery({ className }) {
       </div>
 
       <div className="p-2 max-h-[77vh] overflow-y-auto">
-        {stages.map((stage) => (
+        {subqueries.map((stage) => (
           <div key={stage.id} className="relative mt-4">
             <IconButton
               variant="gradient"
               color="red"
               className="!absolute top-1 right-1 w-5 h-5 rounded-full text-white z-40"
               size="sm"
-              onClick={() => handleRemoveStage(stage.id)}
+              onClick={() => handleRemoveSubquery(stage.id)}
             >
               &#10005;
             </IconButton>
-            <StageInput
-              stageName={stage.name}
+            <SubqueryInput
+              subqueryName={stage.name}
               value={stage.value}
               onUpdate={(value) => handleUpdate(stage.id, value)}
             />
@@ -195,7 +195,7 @@ export default function InputQuery({ className }) {
             variant="outlined"
             className="rounded-full"
             size="sm"
-            onClick={handleAddStage}
+            onClick={handleAddSubquery}
           >
             <IconPlus />
           </IconButton>
