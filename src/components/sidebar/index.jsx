@@ -7,9 +7,9 @@ import Image from "next/image";
 
 export default function Sidebar({ className }) {
   return (
-    <Card className={className + " gap-3 p-1"}>
+    <Card className={className + " gap-2"}>
       {/* Sidebar's header */}
-      <div className="flex flex-row gap-2 max-w-full w-full justify-center">
+      <div className="flex flex-row max-w-full w-full justify-center">
         <div className="relative">
           <Image
             src="/Logo.png"
@@ -23,7 +23,7 @@ export default function Sidebar({ className }) {
       </div>
 
       {/* Input query */}
-      <InputQuery />
+      <InputQuery className="h-full" />
     </Card>
   );
 }

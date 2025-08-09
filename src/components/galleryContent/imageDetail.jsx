@@ -16,6 +16,7 @@ import {
 } from "@material-tailwind/react";
 import submitFrame from "@/libs/submit";
 import { useGallery } from "@/contexts/galleryContext";
+import { useApp } from "@/contexts/appContext";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
@@ -146,31 +147,34 @@ const videosWith30FPS = [
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const { videoName, frameName: frameIndex, src } = imageData;
   const { sessionId } = useGallery();
+  const { getKeyframeDetections } = useApp();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
   const [showPreviewVideo, setShowPreviewVideo] = useState(false);
   const FPS = videoName === "L24_V044" ? 26.438 : (videosWith30FPS.includes(videoName) ? 30 : 25);
 
+  // Lazy load boxes only when toggled on or when image changes while showing
   useEffect(() => {
-    const fetchData = async () => {
+    let cancelled = false;
+    const maybeLoadBoxes = async () => {
+      if (!showObjects) return;
       try {
-        const bboxResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/${videoName}-${frameIndex}`
-        );
-
-        setBbox(
-          bboxResponse.data.objects.map(({ class_name: className, bbox_xywhn: xywhn, confidence }) => {
-            let [x, y, w, h] = xywhn;
+        const detections = await getKeyframeDetections(videoName, frameIndex);
+        if (cancelled) return;
+        const boxes = (Array.isArray(detections) ? detections : []).map(
+          ({ class_name: className, bbox_xywhn: xywhn, confidence }) => {
+            const [x, y, w, h] = xywhn || [];
             return { x, y, w, h, label: className, confidence };
-          })
+          }
         );
+        setBbox(boxes);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        if (!cancelled) console.error("Error fetching detections:", error);
       }
     };
-
-    fetchData();
-  }, [videoName, frameIndex]);
+    maybeLoadBoxes();
+    return () => { cancelled = true; };
+  }, [showObjects, videoName, frameIndex, getKeyframeDetections]);
 
   const handleSubmit = useCallback(() => {
     const data = submitFrame(videoName, frameIndex, sessionId);
@@ -246,7 +250,7 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             ripple
             variant="gradient"
             size="sm"
-            onClick={() => setShowObjects(!showObjects)}
+            onClick={() => setShowObjects((v) => !v)}
           >
             {showObjects ? "Hide objects" : "Show objects"}
           </Button>

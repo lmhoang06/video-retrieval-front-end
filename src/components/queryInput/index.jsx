@@ -1,7 +1,8 @@
 "use client";
 
 import { Button, Card, IconButton } from "@material-tailwind/react";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import pLimit from "p-limit";
 import { useApp } from "@/contexts/appContext";
 import { toast, Bounce } from "react-toastify";
 import axios from "axios";
@@ -14,7 +15,7 @@ export default function InputQuery({ className }) {
   const [subqueries, setSubqueries] = useState([]);
   const [objectsCollapsed, setObjectsCollapsed] = useState(true);
   const [objectsFilter, setObjectsFilter] = useState([]);
-  const { setImages, setQueryResult } = useApp();
+  const { setImages, setQueryResult, queryResult, getKeyframeObjects, getBatchKeyframeDetections } = useApp();
 
   const validateSubquery = (subquery) => {
     const { value } = subquery || {};
@@ -92,12 +93,9 @@ export default function InputQuery({ className }) {
       
       const images = response.data["keyframes"] || [];
       setImages(
-        images.map(keyframe_id => ({
+        images.map((keyframe_id) => ({
           videoName: keyframe_id.split("-")[0],
-          frameName: parseInt(
-            keyframe_id.split("-")[1],
-            10
-          ),
+          frameName: parseInt(keyframe_id.split("-")[1], 10),
           loaded: false,
         }))
       );
@@ -158,8 +156,59 @@ export default function InputQuery({ className }) {
     );
   };
 
+  // Derive and apply object filter to images without mutating original queryResult
+  useEffect(() => {
+  let cancelled = false;
+  const applyFilter = async () => {
+      try {
+        const keyframes = queryResult?.keyframes || [];
+        if (!Array.isArray(keyframes) || keyframes.length === 0) return;
+
+        // If no filter selected, show all keyframes as images
+        if (!objectsFilter || objectsFilter.length === 0) {
+          if (cancelled) return;
+          setImages(
+            keyframes.map((keyframe_id) => ({
+              videoName: keyframe_id.split("-")[0],
+              frameName: parseInt(keyframe_id.split("-")[1], 10),
+              loaded: false,
+            }))
+          );
+          return;
+        }
+
+        // With filter: batch fetch detections for missing keyframes, then apply OR semantics from cache
+        // Trigger batch fetch (it internally avoids fetching cached ids)
+        await getBatchKeyframeDetections(keyframes);
+
+        const limit = pLimit(16);
+        const results = await Promise.all(
+          keyframes.map((keyframe_id) =>
+            limit(async () => {
+              const [videoName, frameStr] = keyframe_id.split("-");
+              const frameName = parseInt(frameStr, 10);
+              const classes = await getKeyframeObjects(videoName, frameName);
+              const matches = classes?.some((c) => objectsFilter.includes(c)); // OR logic
+              return matches ? { videoName, frameName, loaded: false } : null;
+            })
+          )
+        );
+
+        if (cancelled) return;
+        setImages(results.filter(Boolean));
+      } catch (e) {
+        console.error("Apply object filter failed:", e);
+      }
+    };
+
+    applyFilter();
+    return () => {
+      cancelled = true;
+    };
+  }, [objectsFilter, queryResult, getKeyframeObjects, setImages]);
+
   return (
-    <Card className={className + " gap-4 p-2 overflow-y-auto"} shadow={false}>
+    <Card className={className + " gap-4 p-2 overflow-y-auto divide-y-2 divide-blue-500"} shadow={false}>
       <div className="sticky top-0 z-50">
         <Button
           variant="outlined"
@@ -171,7 +220,7 @@ export default function InputQuery({ className }) {
         </Button>
       </div>
 
-      <div className="p-2 max-h-[77vh] overflow-y-auto">
+      <div className="flex-1 p-2 max-h-[77vh] overflow-y-auto">
         {subqueries.map((stage) => (
           <div key={stage.id} className="relative mt-4">
             <IconButton
@@ -200,26 +249,26 @@ export default function InputQuery({ className }) {
             <IconPlus />
           </IconButton>
         </div>
+      </div>
 
-        {/* Objects Query - single, collapsible, excluded from request */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-blue-gray-700">Objects Filter (optional)</span>
-            <Button
-              variant="text"
-              color="blue"
-              className="p-2"
-              onClick={() => setObjectsCollapsed((v) => !v)}
-            >
-              {objectsCollapsed ? "Expand" : "Collapse"}
-            </Button>
-          </div>
-          {!objectsCollapsed && (
-            <div className="mt-2">
-              <ObjectsQuery onUpdate={setObjectsFilter} />
-            </div>
-          )}
+      {/* Objects Query - single, collapsible, excluded from request */}
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-blue-gray-700">Objects Filter</span>
+          <Button
+            variant="text"
+            color="blue"
+            className="p-2"
+            onClick={() => setObjectsCollapsed((v) => !v)}
+          >
+            {objectsCollapsed ? "Expand" : "Collapse"}
+          </Button>
         </div>
+        {!objectsCollapsed && (
+          <div className="mt-2">
+            <ObjectsQuery onUpdate={setObjectsFilter} />
+          </div>
+        )}
       </div>
     </Card>
   );

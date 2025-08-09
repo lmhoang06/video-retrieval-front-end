@@ -48,8 +48,9 @@ const SubqueryInput = ({ subqueryName, className, onUpdate }) => {
           <TabsHeader
             className="bg-transparent border-2 border-light-blue-600"
             indicatorProps={{
-              className: "bg-gray-900/10 shadow-none !text-gray-900",
+              className: "bg-gray-900/10 shadow-none !text-gray-900 !transform-none",
             }}
+            translate="no"
           >
             {tabs.map(({ label, value }) => (
               <Tab
