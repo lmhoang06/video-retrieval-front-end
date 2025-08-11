@@ -55,7 +55,7 @@ function KeyframesQuery({ className, onUpdate }) {
           />
         </div>
         <Typography variant="small" color="blue-gray" className="opacity-70">
-          Only one of Image ID or Text can be provided. Top K must be at least 16.
+          Only one of Image ID or Text can be provided. Text must be in English. Top K must be at least 16.
         </Typography>
       </div>
     </Card>

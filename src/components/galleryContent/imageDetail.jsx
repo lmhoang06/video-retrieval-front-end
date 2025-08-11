@@ -59,6 +59,7 @@ const ImageWithBoundingBoxes = memo(
             height="0"
             className="w-full h-full object-cover"
             alt="Bigger image"
+            unoptimized
           />
           {showObjects &&
             scaledBoxes.map((box, index) => (

@@ -33,12 +33,12 @@ export default function ImagesPerPageManager({ className }) {
   return (
     <div className={className}>
       <Input
-        label="Images per page (min 10, max 100)"
+        label="Images per page (min 10, max 150)"
         placeholder="Images per page"
         color="blue"
         type="number"
         min={10}
-        max={100}
+        max={150}
         defaultValue={imagesPerPage}
         onChange={handleInputChange}
         onBlur={handleInputChange}

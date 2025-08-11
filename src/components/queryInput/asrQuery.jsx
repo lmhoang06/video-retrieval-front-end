@@ -40,7 +40,7 @@ function AsrQuery({ className, onUpdate }) {
           />
         </div>
         <Typography variant="small" color="blue-gray" className="opacity-70">
-          Text query is required. Top K must be at least 16.
+          Text query is required. Text query can be in any language. Top K must be at least 16.
         </Typography>
       </div>
     </Card>

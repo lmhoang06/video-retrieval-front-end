@@ -205,7 +205,7 @@ export default function InputQuery({ className }) {
     return () => {
       cancelled = true;
     };
-  }, [objectsFilter, queryResult, getKeyframeObjects, setImages]);
+  }, [objectsFilter, queryResult, getKeyframeObjects, setImages, getBatchKeyframeDetections]);
 
   return (
     <Card className={className + " gap-4 p-2 overflow-y-auto divide-y-2 divide-blue-500"} shadow={false}>

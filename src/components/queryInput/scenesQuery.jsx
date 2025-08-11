@@ -40,7 +40,7 @@ function ScenesQuery({ className, onUpdate }) {
           />
         </div>
         <Typography variant="small" color="blue-gray" className="opacity-70">
-          Text query is required. Top K must be at least 16.
+          Text query is required and must be in English. Top K must be at least 16.
         </Typography>
       </div>
     </Card>

@@ -3,72 +3,11 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import pLimit from "p-limit";
-import ImageCache from "./imageCache";
 
 const AppContext = createContext(null);
-const cache = new ImageCache(4000);
-
-const getImageData = async (
-  videoName,
-  frameName,
-  retryCount = 0
-) => {
-  try {
-    const { data: arrayBuffer } = await axios.get(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/keyframes/${videoName}-${frameName}`,
-      {
-        timeout: 2500,
-        responseType: "arraybuffer",
-      }
-    );
-    const blob = new Blob([arrayBuffer], { type: "image/avif" });
-    const response = { data: blob };
-
-    const objectURL = URL.createObjectURL(response.data);
-    cache.saveObjectURL(objectURL, videoName, frameName);
-    return objectURL;
-  } catch (error) {
-    console.error(`Error fetching image data: ${error.message}`);
-    if (retryCount < 3) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      return await getImageData(videoName, frameName, retryCount + 1);
-    } else {
-      return null;
-    }
-  }
-};
-
-const loadImage = async (imageData) => {
-  if (imageData?.loaded) return imageData;
-
-  try {
-    const objectURL =
-      cache.getObjectURL(imageData.videoName, imageData.frameName) ||
-      (await getImageData(
-        imageData.videoName,
-        imageData.frameName
-      ));
-      if (!objectURL) throw new Error(`Get image ${imageData.videoName}-${imageData.frameName} failed!`);
-    return { ...imageData, src: objectURL, loaded: true };
-  } catch (error) {
-    console.error("Error loading image:", error);
-    return { ...imageData, loadError: true };
-  }
-};
-
-const loadImagesList = async (images) => {
-  const limit = pLimit(16);
-  return await Promise.all(
-    images.map((imageData) => limit(() => loadImage(imageData)))
-  );
-};
 
 export function AppProvider({ children }) {
-  const [images, setImages] = useState([{
-    "videoName": "L23_V001",
-    "frameName": 2646,
-    "loaded": false,
-  }]);
+  const [images, setImages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [queryResult, setQueryResult] = useState([]);
   // Cache for per-keyframe objects (stores unique class names array per keyframe id)
@@ -136,7 +75,7 @@ export function AppProvider({ children }) {
       if (!keyframeObjectsCache.current.has(key)) keyframeObjectsCache.current.set(key, []);
       return [];
     }
-  }, []);
+  }, [getKeyframeDetections]);
 
   // Batch fetch detections for multiple keyframes; hydrates caches and returns detections per requested id in order
   const getBatchKeyframeDetections = useCallback(async (keyframeIds, retryCount = 0) => {
@@ -147,14 +86,14 @@ export function AppProvider({ children }) {
       const missing = keyframeIds.filter((id) => !keyframeDetectionsCache.current.has(id));
 
       // Fetch missing in chunks to avoid overly large payloads
-      const chunkSize = 128;
+      const chunkSize = 196;
       const chunks = [];
       for (let i = 0; i < missing.length; i += chunkSize) {
         const chunk = missing.slice(i, i + chunkSize);
         if (chunk.length > 0) chunks.push(chunk);
       }
 
-      const limit = pLimit(4);
+      const limit = pLimit(8);
       await Promise.all(
         chunks.map((chunk) =>
           limit(async () => {
@@ -212,25 +151,47 @@ export function AppProvider({ children }) {
 
   const loadImages = useCallback(
     async (startIndex, endIndex) => {
-      const loadedImages = await loadImagesList(
-        images.slice(startIndex, endIndex)
-      );
-
-      setImages((prevImages) => {
-        const updatedImages = [...prevImages];
-
-        let hasChanged = false;
-        for (let i = 0; i < loadedImages.length; i++) {
-          if (prevImages[startIndex + i]?.src !== loadedImages[i]?.src) {
-            hasChanged = true;
-            updatedImages[startIndex + i] = loadedImages[i];
-          }
+      const imagesToLoad = images.slice(startIndex, endIndex);
+      const updatedImages = [];
+      const changedIndices = [];
+      
+      // Process all images first without state updates
+      for (let i = 0; i < imagesToLoad.length; i++) {
+        const imageData = imagesToLoad[i];
+        const actualIndex = startIndex + i;
+        
+        // Skip already loaded images
+        if (imageData.loaded) {
+          updatedImages.push(imageData);
+          continue;
         }
-
-        return hasChanged ? updatedImages : prevImages;
-      });
-
-      return loadedImages;
+        
+        // Create image URL directly without extra function calls
+        const paddedFrameName = imageData.frameName.toString().padStart(6, "0");
+        const updatedImage = {
+          ...imageData,
+          src: `${process.env.NEXT_PUBLIC_IMAGE_SERVER}/${imageData.videoName}/${paddedFrameName}.avif`,
+          loaded: true
+        };
+        
+        updatedImages.push(updatedImage);
+        if (!imageData.loaded) {
+          changedIndices.push(actualIndex);
+        }
+      }
+      
+      // Only update state if any images changed
+      if (changedIndices.length > 0) {
+        setImages(prevImages => {
+          const newImages = [...prevImages];
+          for (let i = 0; i < updatedImages.length; i++) {
+            newImages[startIndex + i] = updatedImages[i];
+          }
+          return newImages;
+        });
+      }
+      
+      return updatedImages;
     },
     [images]
   );
