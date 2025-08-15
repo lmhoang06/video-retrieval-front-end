@@ -4,8 +4,8 @@ import "./globals.css";
 const ibmPlexSans = IBM_Plex_Sans({ subsets: ["latin", "vietnamese"] });
 
 export const metadata = {
-  title: "Sotka",
-  description: "A front-end page of Sotka Retrieval System",
+  title: "Waiedu Retrieval Website",
+  description: "A front-end page of Waiedu team in AIC HCMC 2025",
 };
 
 export default function RootLayout({ children }) {
