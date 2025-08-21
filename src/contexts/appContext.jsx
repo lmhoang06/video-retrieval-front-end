@@ -170,7 +170,7 @@ export function AppProvider({ children }) {
         const paddedFrameName = imageData.frameName.toString().padStart(6, "0");
         const updatedImage = {
           ...imageData,
-          src: `${process.env.NEXT_PUBLIC_IMAGE_SERVER}/${imageData.videoName}/${paddedFrameName}.avif`,
+          src: `${process.env.NEXT_PUBLIC_IMAGE_SERVER}/${imageData.videoName.slice(0, 3)}/${imageData.videoName}/${paddedFrameName}.avif`,
           loaded: true
         };
         

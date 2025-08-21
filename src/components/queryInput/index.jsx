@@ -82,7 +82,6 @@ export default function InputQuery({ className }) {
 
     const requestData = subqueries.map((stage) => stage.value);
 
-    // Objects filter is intentionally excluded from request payload for now
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`, 
       requestData
@@ -118,6 +117,44 @@ export default function InputQuery({ className }) {
       });
       console.error(err);
       throw new Error("Query Image Failed!");
+    }
+  };
+
+  const handleExportTop100 = () => {
+    try {
+      const ids = Array.isArray(queryResult?.keyframes)
+        ? queryResult.keyframes.slice(0, 100)
+        : [];
+      if (ids.length === 0) {
+        toast.info("No results to export.", {
+          autoClose: 3000,
+          pauseOnHover: false,
+          draggable: true,
+          theme: "light",
+          transition: Bounce,
+        });
+        return;
+      }
+
+      const content = ids.join("\n");
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "top100.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed:", e);
+      toast.error("Failed to export results.", {
+        autoClose: 3500,
+        pauseOnHover: false,
+        draggable: true,
+        theme: "light",
+        transition: Bounce,
+      });
     }
   };
 
@@ -218,6 +255,16 @@ export default function InputQuery({ className }) {
         >
           Submit Query
         </Button>
+        <div className="mt-2">
+          <Button
+            variant="outlined"
+            color="green"
+            className="p-2 w-full !bg-white"
+            onClick={handleExportTop100}
+          >
+            Export Top 100 IDs
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 p-2 max-h-[77vh] overflow-y-auto">

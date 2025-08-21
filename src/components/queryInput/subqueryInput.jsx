@@ -40,11 +40,11 @@ const SubqueryInput = ({ subqueryName, className, onUpdate }) => {
         <Typography
           variant="lead"
           color="light-blue"
-          className="w-full text-center text-lg mb-4"
+          className="w-full text-center text-lg mb-2"
         >
           {subqueryName}
         </Typography>
-        <Tabs value={currentTab}>
+        <Tabs value={currentTab} className="mx-1">
           <TabsHeader
             className="bg-transparent border-2 border-light-blue-600"
             indicatorProps={{
@@ -64,7 +64,7 @@ const SubqueryInput = ({ subqueryName, className, onUpdate }) => {
             ))}
           </TabsHeader>
         </Tabs>
-        <div className="p-2">{renderActive()}</div>
+        {renderActive()}
       </Card>
     </div>
   );

@@ -81,69 +81,6 @@ const ImageWithBoundingBoxes = memo(
 
 ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
-const videosWith30FPS = [
-  'L21_V001',
-  'L21_V002',
-  'L21_V005',
-  'L21_V006',
-  'L21_V007',
-  'L21_V012',
-  'L21_V013',
-  'L21_V014',
-  'L21_V015',
-  'L21_V016',
-  'L21_V019',
-  'L21_V021',
-  'L21_V022',
-  'L21_V023',
-  'L21_V026',
-  'L21_V027',
-  'L21_V028',
-  'L21_V029',
-  'L21_V030',
-  'L22_V001',
-  'L22_V004',
-  'L22_V005',
-  'L22_V006',
-  'L22_V011',
-  'L22_V012',
-  'L22_V013',
-  'L22_V014',
-  'L22_V015',
-  'L22_V018',
-  'L22_V019',
-  'L22_V020',
-  'L22_V021',
-  'L22_V022',
-  'L22_V025',
-  'L22_V026',
-  'L22_V027',
-  'L22_V028',
-  'L22_V029',
-  'L24_V017',
-  'L24_V019',
-  'L24_V020',
-  'L24_V021',
-  'L24_V022',
-  'L24_V023',
-  'L24_V024',
-  'L24_V025',
-  'L24_V027',
-  'L24_V028',
-  'L24_V029',
-  'L24_V030',
-  'L24_V031',
-  'L24_V033',
-  'L24_V035',
-  'L24_V036',
-  'L24_V037',
-  'L24_V038',
-  'L24_V039',
-  'L24_V040',
-  'L24_V041',
-  'L24_V042',
-  'L24_V045'
-];
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const { videoName, frameName: frameIndex, src } = imageData;
@@ -152,7 +89,47 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
   const [showPreviewVideo, setShowPreviewVideo] = useState(false);
-  const FPS = videoName === "L24_V044" ? 26.438 : (videosWith30FPS.includes(videoName) ? 30 : 25);
+  // Video metadata state (fetched from NEXT_PUBLIC_METADATA_SERVER)
+  const [videoMeta, setVideoMeta] = useState({ fps: null, url: null, name: null });
+  const [metaLoading, setMetaLoading] = useState(false);
+
+  // Fetch per-video metadata (fps and url)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchMeta = async () => {
+      if (!videoName) return;
+      try {
+        setMetaLoading(true);
+        const base = process.env.NEXT_PUBLIC_METADATA_SERVER;
+        const prefix = videoName.slice(0, 3);
+        const metaUrl = `${base}/${prefix}/${videoName}.json`;
+        const { data } = await axios.get(metaUrl);
+        if (cancelled) return;
+        const fps = typeof data?.fps === "string" ? parseFloat(data.fps) : Number(data?.fps);
+        const url = data?.url ?? null;
+        setVideoMeta({ fps: Number.isFinite(fps) ? fps : null, url, name: videoName });
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to load video metadata", err);
+          setVideoMeta({ fps: null, url: null, name: videoName });
+        }
+      } finally {
+        if (!cancelled) setMetaLoading(false);
+      }
+    };
+    // Only fetch when preview is toggled on, and metadata not yet loaded for this video
+    if (!showPreviewVideo) return () => { cancelled = true; };
+    if (videoMeta?.name === videoName && (videoMeta.url || videoMeta.fps)) {
+      return () => { cancelled = true; };
+    }
+    fetchMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, [videoName, showPreviewVideo]);
+
+  // Use metadata fps with a safe fallback
+  const FPS = videoMeta.fps || 25;
 
   // Lazy load boxes only when toggled on or when image changes while showing
   useEffect(() => {
@@ -204,8 +181,50 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     }
   }, [frameIndex, videoName, sessionId]);
 
-  // Add video source URL
-  const videoSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/${videoName}`;
+  // Use video URL from metadata
+  const videoSrc = videoMeta.url || "";
+
+  // Helpers to support YouTube embed when URL is a watch link
+  const getYouTubeEmbedUrl = useCallback((rawUrl, startSec) => {
+    if (!rawUrl) return null;
+    try {
+      const u = new URL(rawUrl);
+      const host = u.hostname.toLowerCase();
+      let videoId = null;
+      if (host.includes("youtube.com")) {
+        // Typical: https://www.youtube.com/watch?v=VIDEO_ID
+        if (u.pathname === "/watch") {
+          videoId = u.searchParams.get("v");
+        } else if (u.pathname.startsWith("/embed/")) {
+          videoId = u.pathname.split("/")[2] || null;
+        } else if (u.pathname.startsWith("/shorts/")) {
+          videoId = u.pathname.split("/")[2] || null;
+        }
+      } else if (host === "youtu.be") {
+        // Short link: https://youtu.be/VIDEO_ID
+        videoId = u.pathname.replace("/", "");
+      }
+      if (!videoId) return null;
+      const start = Number.isFinite(startSec) ? Math.max(0, Math.floor(startSec)) : 0;
+      const params = new URLSearchParams({
+        start: String(start),
+        autoplay: "1",
+        rel: "0",
+        modestbranding: "1",
+        controls: "1",
+      });
+      return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+    } catch (_) {
+      return null;
+    }
+  }, []);
+
+  const startSeconds = useMemo(() => {
+    const idx = Number(frameIndex);
+    return Number.isFinite(idx) && FPS ? Math.max(0, Math.floor(idx / FPS)) : 0;
+  }, [frameIndex, FPS]);
+
+  const youtubeEmbedUrl = useMemo(() => getYouTubeEmbedUrl(videoSrc, startSeconds), [videoSrc, startSeconds, getYouTubeEmbedUrl]);
 
   return (
     <Dialog
@@ -276,15 +295,33 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             >
               &#10005;
             </IconButton>
-            <video
-              src={videoSrc}
-              controls
-              autoPlay
-              onLoadedMetadata={(e) => {
-                e.currentTarget.currentTime = frameIndex / FPS;
-              }}
-              className="w-[36rem] h-auto mt-1"
-            />
+            {videoSrc ? (
+              youtubeEmbedUrl ? (
+                <iframe
+                  src={youtubeEmbedUrl}
+                  title={`Preview ${videoName}`}
+                  className="w-[36rem] h-[20.25rem] mt-1" /* 16:9 height for 36rem width: 36 * 9/16 = 20.25 */
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={videoSrc}
+                  controls
+                  autoPlay
+                  onLoadedMetadata={(e) => {
+                    if (FPS) {
+                      e.currentTarget.currentTime = Number(frameIndex) / FPS;
+                    }
+                  }}
+                  className="w-[36rem] h-auto mt-1"
+                />
+              )
+            ) : (
+              <div className="w-[36rem] h-auto mt-1 p-3 bg-white/70 text-sm text-red-600 rounded">
+                {metaLoading ? "Loading video metadata..." : "Video preview not available."}
+              </div>
+            )}
           </div>
         )}
       </div>

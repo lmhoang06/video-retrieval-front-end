@@ -12,7 +12,6 @@ import {
   MenuItem,
 } from "@material-tailwind/react";
 import React, { useState, useEffect, memo, useMemo } from "react";
-import axios from "axios";
 
 const ObjectChosenInfo = memo(
   ({ className, objectClassName }) => {
@@ -38,16 +37,19 @@ function ObjectsQuery({ className, onUpdate }) {
   useEffect(() => {
     (async function getObjectsClassName() {
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/class_list`
-        );
-        const classes = Array.isArray(res.data?.classes) ? res.data.classes : [];
-        const uniqueSorted = [...new Set(classes.filter(Boolean))].sort((a, b) =>
+        const res = await fetch("/object_classlist.txt");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const classes = text
+          .split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0 && !s.startsWith("#"));
+        const uniqueSorted = [...new Set(classes)].sort((a, b) =>
           a.localeCompare(b, undefined, { sensitivity: "base" })
         );
         setObjectsTypeList(uniqueSorted);
       } catch (err) {
-        console.error("Failed to fetch object classes", err);
+        console.error("Failed to load object classes from public/object_classlist.txt", err);
         setObjectsTypeList([]);
       }
     })();
