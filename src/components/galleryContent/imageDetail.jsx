@@ -242,12 +242,12 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     >
       {/* <img className="w-1/2" src={src} alt={`${video_name}_${frame_idx}`} /> */}
       <ImageWithBoundingBoxes
-        className="w-1/2"
+        className="w-2/3"
         src={src}
         boxes={bbox}
         showObjects={showObjects}
       />
-      <div className="w-1/2 flex-col p-3">
+      <div className="w-1/3 flex-col p-3">
         <Typography variant="h4" color="blue">
           Video name: {videoName}
         </Typography>
