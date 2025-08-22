@@ -56,6 +56,7 @@ function KeyframesQuery({ className, onUpdate }) {
         </div>
         <Typography variant="small" color="blue-gray" className="opacity-70">
           Only one of Image ID or Text can be provided. Text must be in English. Top K must be at least 16.
+          Query by Image ID will be same as KNN. Image ID must be in shape &lt;video name&gt;-&lt;frame number&gt;.
         </Typography>
       </div>
     </Card>
