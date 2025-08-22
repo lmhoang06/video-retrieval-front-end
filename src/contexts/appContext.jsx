@@ -10,36 +10,48 @@ export function AppProvider({ children }) {
   const [images, setImages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [queryResult, setQueryResult] = useState([]);
+  // Cache for per-video objects (stores unique class names array per keyframe id)
+  const videoDetectionsCache = useRef(new Map());
   // Cache for per-keyframe objects (stores unique class names array per keyframe id)
   const keyframeObjectsCache = useRef(new Map());
   // Cache for full detections per keyframe (array of { class_name, bbox_xywhn, confidence })
   const keyframeDetectionsCache = useRef(new Map());
 
   const getKeyframeDetections = useCallback(async (videoName, frameName, retryCount = 0) => {
-    try {
-      const key = `${videoName}-${frameName}`;
-      if (keyframeDetectionsCache.current.has(key)) {
-        return keyframeDetectionsCache.current.get(key);
-      }
+    const key = `${videoName}-${frameName}`;
+    if (keyframeDetectionsCache.current.has(key)) {
+      return keyframeDetectionsCache.current.get(key);
+    }
 
-      const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects/${key}`,
-      );
-
-      const detections = Array.isArray(data) ? data : (Array.isArray(data?.objects) ? data.objects : []);
+    // Check if the whole video's detections are cached
+    if (videoDetectionsCache.current.has(videoName)) {
+      const allDetections = videoDetectionsCache.current.get(videoName);
+      const detections = allDetections[frameName] || [];
       keyframeDetectionsCache.current.set(key, detections);
-      // Also hydrate objects cache (class names) for consistency
-      const classNames = Array.from(new Set(detections.map((d) => d?.class_name).filter(Boolean)));
-      keyframeObjectsCache.current.set(key, classNames);
+      return detections;
+    }
+
+    // Fetch the entire JSON for the video
+    try {
+      const url = `${process.env.NEXT_PUBLIC_OBJECTS_SERVER}/${videoName.slice(0, 3)}/${videoName}.json`;
+      const { data } = await axios.get(url);
+      
+      const allDetections = (data && typeof data === 'object') ? data : {};
+      videoDetectionsCache.current.set(videoName, allDetections);
+
+      // Now get the specific frame's detections
+      const detections = allDetections[frameName] || [];
+      keyframeDetectionsCache.current.set(key, detections);
       return detections;
     } catch (error) {
       if (retryCount < 2) {
         await new Promise((r) => setTimeout(r, 120));
         return await getKeyframeDetections(videoName, frameName, retryCount + 1);
       }
-      console.error(`Error fetching detections for ${videoName}-${frameName}:`, error?.message || error);
-      const key = `${videoName}-${frameName}`;
-      if (!keyframeDetectionsCache.current.has(key)) keyframeDetectionsCache.current.set(key, []);
+      console.error(`Error fetching detections for ${videoName}-${frameName} from new API:`, error?.message || error);
+      // Cache empty to avoid hammering on repeated failures
+      videoDetectionsCache.current.set(videoName, {}); // Cache empty object for the video
+      keyframeDetectionsCache.current.set(key, []);
       if (!keyframeObjectsCache.current.has(key)) keyframeObjectsCache.current.set(key, []);
       return [];
     }
@@ -84,44 +96,36 @@ export function AppProvider({ children }) {
 
       // Determine which ids are missing from cache
       const missing = keyframeIds.filter((id) => !keyframeDetectionsCache.current.has(id));
-
-      // Fetch missing in chunks to avoid overly large payloads
-      const chunkSize = 196;
-      const chunks = [];
-      for (let i = 0; i < missing.length; i += chunkSize) {
-        const chunk = missing.slice(i, i + chunkSize);
-        if (chunk.length > 0) chunks.push(chunk);
+      
+      // Group missing keyframes by video
+      const keyframesByVideo = {};
+      for (const id of missing) {
+        const [videoName, frameName] = id.split('-');
+        if (!keyframesByVideo[videoName]) {
+          keyframesByVideo[videoName] = [];
+        }
+        keyframesByVideo[videoName].push({ id, frameName });
       }
 
       const limit = pLimit(8);
       await Promise.all(
-        chunks.map((chunk) =>
+        Object.keys(keyframesByVideo).map((videoName) =>
           limit(async () => {
             try {
-              const { data } = await axios.post(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/objects`,
-                { keyframe_ids: chunk },
-              );
-
-              // Accept either a plain mapping or a { results: mapping }
-              const container = (data && typeof data === "object" && !Array.isArray(data)) ? data : {};
-              const mapping = (container.results && typeof container.results === "object" && !Array.isArray(container.results))
-                ? container.results
-                : container;
-
-              for (const id of chunk) {
-                const raw = mapping[id];
-                const dets = Array.isArray(raw)
-                  ? raw
-                  : (Array.isArray(raw?.objects) ? raw.objects : []);
-                keyframeDetectionsCache.current.set(id, dets);
-                const classes = Array.from(new Set(dets.map((d) => d?.class_name).filter(Boolean)));
-                keyframeObjectsCache.current.set(id, classes);
-              }
+                // This will fetch and cache the whole video json
+                await getKeyframeDetections(videoName, keyframesByVideo[videoName][0].frameName);
+                // Now populate the cache for all requested frames of this video
+                const allDetections = videoDetectionsCache.current.get(videoName) || {};
+                for (const { id, frameName } of keyframesByVideo[videoName]) {
+                    const dets = allDetections[frameName] || [];
+                    keyframeDetectionsCache.current.set(id, dets);
+                    const classes = Array.from(new Set(dets.map((d) => d?.class_name).filter(Boolean)));
+                    keyframeObjectsCache.current.set(id, classes);
+                }
             } catch (e) {
               // On first attempt, bubble up to allow a full retry; on retry, mark empty to avoid loops
               if (retryCount >= 1) {
-                for (const id of chunk) {
+                for (const { id } of keyframesByVideo[videoName]) {
                   if (!keyframeDetectionsCache.current.has(id)) keyframeDetectionsCache.current.set(id, []);
                   if (!keyframeObjectsCache.current.has(id)) keyframeObjectsCache.current.set(id, []);
                 }
@@ -147,7 +151,7 @@ export function AppProvider({ children }) {
       }
       return keyframeIds.map(() => []);
     }
-  }, []);
+  }, [getKeyframeDetections]);
 
   const loadImages = useCallback(
     async (startIndex, endIndex) => {
