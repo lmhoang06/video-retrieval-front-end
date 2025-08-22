@@ -208,11 +208,11 @@ export function AppProvider({ children }) {
     loadImages,
     queryResult,
     setQueryResult,
-  // Lazily fetch and cache list of object class names for a keyframe
-  getKeyframeObjects,
-  // Expose detections fetcher for components that need boxes
-  getKeyframeDetections,
-  getBatchKeyframeDetections,
+    // Lazily fetch and cache list of object class names for a keyframe
+    getKeyframeObjects,
+    // Expose detections fetcher for components that need boxes
+    getKeyframeDetections,
+    getBatchKeyframeDetections,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

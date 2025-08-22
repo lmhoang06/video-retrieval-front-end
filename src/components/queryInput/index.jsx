@@ -14,8 +14,8 @@ import ObjectsQuery from "./objectsQuery";
 export default function InputQuery({ className }) {
   const [subqueries, setSubqueries] = useState([]);
   const [objectsCollapsed, setObjectsCollapsed] = useState(true);
-  const [objectsFilter, setObjectsFilter] = useState([]);
-  const { setImages, setQueryResult, queryResult, getKeyframeObjects, getBatchKeyframeDetections } = useApp();
+  const [objectsFilter, setObjectsFilter] = useState({ include: [], exclude: [], confidence: 0 });
+  const { setImages, setQueryResult, queryResult, getKeyframeDetections, getBatchKeyframeDetections } = useApp();
 
   const validateSubquery = (subquery) => {
     const { value } = subquery || {};
@@ -195,38 +195,55 @@ export default function InputQuery({ className }) {
 
   // Derive and apply object filter to images without mutating original queryResult
   useEffect(() => {
-  let cancelled = false;
-  const applyFilter = async () => {
+    let cancelled = false;
+    const applyFilter = async () => {
       try {
         const keyframes = queryResult?.keyframes || [];
         if (!Array.isArray(keyframes) || keyframes.length === 0) return;
 
-        // If no filter selected, show all keyframes as images
-        if (!objectsFilter || objectsFilter.length === 0) {
+        // Backward guard: if objectsFilter is still an array (legacy), treat as include only
+        const filterObj = Array.isArray(objectsFilter)
+          ? { include: objectsFilter, exclude: [], confidence: 0 }
+          : (objectsFilter || { include: [], exclude: [], confidence: 0 });
+
+        const { include = [], exclude = [], confidence = 0 } = filterObj;
+
+        // No filter case
+        if ((!include || include.length === 0) && (!exclude || exclude.length === 0)) {
           if (cancelled) return;
           setImages(
             keyframes.map((keyframe_id) => ({
-              videoName: keyframe_id.split("-")[0],
-              frameName: parseInt(keyframe_id.split("-")[1], 10),
+              videoName: keyframe_id.split('-')[0],
+              frameName: parseInt(keyframe_id.split('-')[1], 10),
               loaded: false,
             }))
           );
           return;
         }
 
-        // With filter: batch fetch detections for missing keyframes, then apply OR semantics from cache
-        // Trigger batch fetch (it internally avoids fetching cached ids)
+        // Batch hydrate detections
         await getBatchKeyframeDetections(keyframes);
 
         const limit = pLimit(16);
         const results = await Promise.all(
           keyframes.map((keyframe_id) =>
             limit(async () => {
-              const [videoName, frameStr] = keyframe_id.split("-");
+              const [videoName, frameStr] = keyframe_id.split('-');
               const frameName = parseInt(frameStr, 10);
-              const classes = await getKeyframeObjects(videoName, frameName);
-              const matches = classes?.some((c) => objectsFilter.includes(c)); // OR logic
-              return matches ? { videoName, frameName, loaded: false } : null;
+              const detections = await getKeyframeDetections(videoName, frameName);
+              const detClasses = (Array.isArray(detections) ? detections : [])
+                .filter(d => typeof d?.confidence === 'number' && d.confidence >= confidence)
+                .map(d => d?.class_name)
+                .filter(Boolean);
+
+              // Include logic: OR inside (if include list empty => passes by default)
+              const passInclude = include.length === 0 || detClasses.some(c => include.includes(c));
+              // Exclude logic: OR inside list; fail if any excluded class present
+              const passExclude = exclude.length === 0 || !detClasses.some(c => exclude.includes(c));
+              if (passInclude && passExclude) {
+                return { videoName, frameName, loaded: false };
+              }
+              return null;
             })
           )
         );
@@ -234,15 +251,12 @@ export default function InputQuery({ className }) {
         if (cancelled) return;
         setImages(results.filter(Boolean));
       } catch (e) {
-        console.error("Apply object filter failed:", e);
+        console.error('Apply object filter failed:', e);
       }
     };
-
     applyFilter();
-    return () => {
-      cancelled = true;
-    };
-  }, [objectsFilter, queryResult, getKeyframeObjects, setImages, getBatchKeyframeDetections]);
+    return () => { cancelled = true; };
+  }, [objectsFilter, queryResult, getKeyframeDetections, setImages, getBatchKeyframeDetections]);
 
   return (
     <Card className={className + " gap-4 p-2 overflow-y-auto divide-y-2 divide-blue-500"} shadow={false}>
@@ -301,7 +315,7 @@ export default function InputQuery({ className }) {
       {/* Objects Query - single, collapsible, excluded from request */}
       <div>
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-blue-gray-700">Objects Filter</span>
+          <span className="font-semibold text-blue-gray-700">Objects Filter (Include / Exclude)</span>
           <Button
             variant="text"
             color="blue"

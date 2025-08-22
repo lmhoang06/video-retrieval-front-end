@@ -30,9 +30,12 @@ const ObjectChosenInfo = memo(
 ObjectChosenInfo.displayName = "ObjectChosenInfo";
 
 function ObjectsQuery({ className, onUpdate }) {
-  const [chosenObjects, setChosenObjects] = useState([]);
+  const [includeObjects, setIncludeObjects] = useState([]);
+  const [excludeObjects, setExcludeObjects] = useState([]);
+  const [confidence, setConfidence] = useState(0);
   const [objectsTypeList, setObjectsTypeList] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchInclude, setSearchInclude] = useState("");
+  const [searchExclude, setSearchExclude] = useState("");
 
   useEffect(() => {
     (async function getObjectsClassName() {
@@ -55,90 +58,180 @@ function ObjectsQuery({ className, onUpdate }) {
     })();
   }, []);
 
+  // Emit combined filter object upward
   useEffect(() => {
-    onUpdate(chosenObjects);
-  }, [chosenObjects, onUpdate]);
+    onUpdate({ include: includeObjects, exclude: excludeObjects, confidence });
+  }, [includeObjects, excludeObjects, confidence, onUpdate]);
 
-  const filteredObjects = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return objectsTypeList;
-    return objectsTypeList.filter((cn) => cn.toLowerCase().includes(term));
-  }, [objectsTypeList, searchTerm]);
+  const filteredIncludeList = useMemo(() => {
+    const term = searchInclude.trim().toLowerCase();
+    const base = !term
+      ? objectsTypeList
+      : objectsTypeList.filter((cn) => cn.toLowerCase().includes(term));
+    return base.filter((cn) => !excludeObjects.includes(cn)); // hide ones already excluded
+  }, [objectsTypeList, searchInclude, excludeObjects]);
+
+  const filteredExcludeList = useMemo(() => {
+    const term = searchExclude.trim().toLowerCase();
+    const base = !term
+      ? objectsTypeList
+      : objectsTypeList.filter((cn) => cn.toLowerCase().includes(term));
+    return base.filter((cn) => !includeObjects.includes(cn)); // hide ones already included
+  }, [objectsTypeList, searchExclude, includeObjects]);
 
   return (
     <Card className={className}>
-      {/* Chosen objects */}
-      <div className="flex flex-col gap-1 overflow-y-auto max-h-60 border-light-blue-500">
-        {chosenObjects.map((className, index) => (
-          <Chip
-            variant="outlined"
-            color="light-blue"
+      {/* Confidence threshold */}
+      <div className="mb-3">
+        <Input
+          type="number"
+          label="Confidence ≥"
             size="md"
-            key={index}
-            className="py-0"
-            value={
-              <ObjectChosenInfo
-                objectClassName={className}
-              />
+          value={confidence}
+          step={0.01}
+          min={0}
+          max={1}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            if (Number.isNaN(v)) {
+              setConfidence(0);
+            } else {
+              setConfidence(Math.min(1, Math.max(0, v)));
             }
-            onClose={() =>
-              setChosenObjects((prev) =>
-                prev.filter(cn => cn != className)
-              )
-            }
-          />
-        ))}
+          }}
+        />
       </div>
 
-      {/* Choosing objects */}
-      <div className="flex flex-col gap-1 mt-2">
-        <Menu
-          placement="right-start" 
-          offset={8}
-          dismiss={{
-            itemPress: false,
-          }}
-        >
-          <MenuHandler>
-            <Button variant="outlined" color="blue" className="p-2 w-full">
-              Choose objects
-            </Button>
-          </MenuHandler>
-          <MenuList className="max-h-96 w-64 overflow-y-auto">
-            <Input
-              label="Search objects…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+      {/* Include objects section */}
+      <div>
+        <Typography variant="h6" color="blue-gray">Include Objects</Typography>
+        <div className="flex flex-col gap-1 overflow-y-auto max-h-40 mt-1">
+          {includeObjects.map((className, index) => (
+            <Chip
+              variant="outlined"
+              color="green"
               size="md"
-              color="blue"
+              key={index}
+              className="py-0"
+              value={<ObjectChosenInfo objectClassName={className} />}
+              onClose={() =>
+                setIncludeObjects((prev) => prev.filter((cn) => cn !== className))
+              }
             />
-            {filteredObjects.length > 0 ? (
-              filteredObjects.map((className, index) => (
-                <MenuItem
-                  key={index}
-                  id={className}
-                  onClick={() => {
-                    setChosenObjects((prev) =>
-                      prev.includes(className) ? prev : [...prev, className]
-                    );
-                    setSearchTerm("");
-                  }}
-                  className="flex flex-row"
-                >
+          ))}
+          {includeObjects.length === 0 && (
+            <Typography variant="small" className="text-blue-gray-400">None selected</Typography>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 mt-2">
+          <Menu placement="right-start" offset={8} dismiss={{ itemPress: false }}>
+            <MenuHandler>
+              <Button variant="outlined" color="blue" className="p-2 w-full">
+                Add Include
+              </Button>
+            </MenuHandler>
+            <MenuList className="max-h-96 w-64 overflow-y-auto">
+              <Input
+                label="Search…"
+                value={searchInclude}
+                onChange={(e) => setSearchInclude(e.target.value)}
+                size="md"
+                color="blue"
+              />
+              {filteredIncludeList.length > 0 ? (
+                filteredIncludeList.map((className, index) => (
+                  <MenuItem
+                    key={index}
+                    id={className}
+                    onClick={() => {
+                      setIncludeObjects((prev) =>
+                        prev.includes(className) ? prev : [...prev, className]
+                      );
+                      setSearchInclude("");
+                    }}
+                    className="flex flex-row"
+                  >
+                    <Typography variant="small" color="blue-gray">
+                      {className}
+                    </Typography>
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled className="opacity-60 cursor-not-allowed">
                   <Typography variant="small" color="blue-gray">
-                    {className}
+                    No matches
                   </Typography>
                 </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled className="opacity-60 cursor-not-allowed">
-                <Typography variant="small" color="blue-gray">
-                  No matches
-                </Typography>
-              </MenuItem>
-            )}
-          </MenuList>
-        </Menu>
+              )}
+            </MenuList>
+          </Menu>
+        </div>
+      </div>
+
+      {/* Exclude objects section */}
+      <div className="mt-6">
+        <Typography variant="h6" color="blue-gray">Exclude Objects</Typography>
+        <div className="flex flex-col gap-1 overflow-y-auto max-h-40 mt-1">
+          {excludeObjects.map((className, index) => (
+            <Chip
+              variant="outlined"
+              color="red"
+              size="md"
+              key={index}
+              className="py-0"
+              value={<ObjectChosenInfo objectClassName={className} />}
+              onClose={() =>
+                setExcludeObjects((prev) => prev.filter((cn) => cn !== className))
+              }
+            />
+          ))}
+          {excludeObjects.length === 0 && (
+            <Typography variant="small" className="text-blue-gray-400">None selected</Typography>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 mt-2">
+          <Menu placement="right-start" offset={8} dismiss={{ itemPress: false }}>
+            <MenuHandler>
+              <Button variant="outlined" color="blue" className="p-2 w-full">
+                Add Exclude
+              </Button>
+            </MenuHandler>
+            <MenuList className="max-h-96 w-64 overflow-y-auto">
+              <Input
+                label="Search…"
+                value={searchExclude}
+                onChange={(e) => setSearchExclude(e.target.value)}
+                size="md"
+                color="blue"
+              />
+              {filteredExcludeList.length > 0 ? (
+                filteredExcludeList.map((className, index) => (
+                  <MenuItem
+                    key={index}
+                    id={className}
+                    onClick={() => {
+                      setExcludeObjects((prev) =>
+                        prev.includes(className) ? prev : [...prev, className]
+                      );
+                      setSearchExclude("");
+                    }}
+                    className="flex flex-row"
+                  >
+                    <Typography variant="small" color="blue-gray">
+                      {className}
+                    </Typography>
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled className="opacity-60 cursor-not-allowed">
+                  <Typography variant="small" color="blue-gray">
+                    No matches
+                  </Typography>
+                </MenuItem>
+              )}
+            </MenuList>
+          </Menu>
+        </div>
       </div>
     </Card>
   );
