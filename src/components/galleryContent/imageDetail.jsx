@@ -254,6 +254,9 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         <Typography variant="h4" color="blue">
           Frame index: {frameIndex}
         </Typography>
+        <Typography variant="h4" color="blue">
+          FPS: {videoMeta.fps}
+        </Typography>
         {/* Function button */}
         <div className="flex gap-2">
           <Button
