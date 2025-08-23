@@ -136,7 +136,7 @@ export default function InputQuery({ className }) {
         return;
       }
 
-      const content = ids.replace('-', ' ').join("\n");
+      const content = ids.replace('-', ', ').join("\n");
       const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
