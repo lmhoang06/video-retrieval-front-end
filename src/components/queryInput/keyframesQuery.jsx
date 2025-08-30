@@ -48,14 +48,15 @@ function KeyframesQuery({ className, onUpdate }) {
           <Input
             type="number"
             min={16}
-            label="Top K (min 16)"
+            max={1024}
+            label="Top K (min 16, max 1024)"
             value={normalizedTopK}
             onChange={(e) => setTopK(e.target.value)}
             crossOrigin="anonymous"
           />
         </div>
         <Typography variant="small" color="blue-gray" className="opacity-70">
-          Only one of Image ID or Text can be provided. Text must be in English. Top K must be at least 16.
+          Only one of Image ID or Text can be provided. Text must be in English. Top K must be at least 16 and at most 1024 due to system limitations.
           Query by Image ID will be same as KNN. Image ID must be in shape &lt;video name&gt;-&lt;frame number&gt;.
         </Typography>
       </div>

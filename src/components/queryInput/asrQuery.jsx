@@ -33,14 +33,15 @@ function AsrQuery({ className, onUpdate }) {
           <Input
             type="number"
             min={16}
-            label="Top K (min 16)"
+            max={1024}
+            label="Top K (min 16, max 1024)"
             value={normalizedTopK}
             onChange={(e) => setTopK(e.target.value)}
             crossOrigin="anonymous"
           />
         </div>
         <Typography variant="small" color="blue-gray" className="opacity-70">
-          Text query is required. Text query can be in any language. Top K must be at least 16.
+          Text query is required. Text query can be in any language. Top K must be at least 16 and at most 1024 due to system limitations.
         </Typography>
       </div>
     </Card>

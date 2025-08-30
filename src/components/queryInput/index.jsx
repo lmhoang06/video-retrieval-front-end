@@ -325,11 +325,9 @@ export default function InputQuery({ className }) {
             {objectsCollapsed ? "Expand" : "Collapse"}
           </Button>
         </div>
-        {!objectsCollapsed && (
-          <div className="mt-2">
-            <ObjectsQuery onUpdate={setObjectsFilter} />
-          </div>
-        )}
+        <div className={`mt-2 transition-all duration-200 ${objectsCollapsed ? 'hidden' : 'block'}`}>
+          <ObjectsQuery onUpdate={setObjectsFilter} />
+        </div>
       </div>
     </Card>
   );

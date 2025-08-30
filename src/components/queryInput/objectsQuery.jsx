@@ -169,7 +169,7 @@ function ObjectsQuery({ className, onUpdate }) {
       </div>
 
       {/* Exclude objects section */}
-      <div className="mt-6">
+      <div className="mt-3">
         <Typography variant="h6" color="blue-gray">Exclude Objects</Typography>
         <div className="flex flex-col gap-1 overflow-y-auto max-h-40 mt-1">
           {excludeObjects.map((className, index) => (
