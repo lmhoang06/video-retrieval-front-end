@@ -1,11 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import InputQuery from "../queryInput";
+import SubsetSelector from "../subsetSelector";
 import { Card } from "@material-tailwind/react";
 import Image from "next/image";
 
 export default function Sidebar({ className }) {
+  const [selectedSubset, setSelectedSubset] = useState("All videos");
+
+  const handleSubsetChange = (subset) => {
+    setSelectedSubset(subset);
+  };
+
   return (
     <Card className={className + " gap-2"}>
       {/* Sidebar's header */}
@@ -22,8 +29,17 @@ export default function Sidebar({ className }) {
         </div>
       </div>
 
+      {/* Subset Selection */}
+      <div className="px-2">
+        <SubsetSelector
+          selectedSubset={selectedSubset}
+          onSubsetChange={handleSubsetChange}
+          className="mb-2"
+        />
+      </div>
+
       {/* Input query */}
-      <InputQuery className="h-full" />
+      <InputQuery className="h-full" selectedSubset={selectedSubset} />
     </Card>
   );
 }

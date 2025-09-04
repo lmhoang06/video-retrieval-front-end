@@ -10,8 +10,9 @@ import "react-toastify/dist/ReactToastify.css";
 import SubqueryInput from "./subqueryInput";
 import { IconPlus } from "@/libs/icon";
 import ObjectsQuery from "./objectsQuery";
+import { getSubsetValue } from "@/libs/subsetMapping";
 
-export default function InputQuery({ className }) {
+export default function InputQuery({ className, selectedSubset }) {
   const [subqueries, setSubqueries] = useState([]);
   const [objectsCollapsed, setObjectsCollapsed] = useState(true);
   const [objectsFilter, setObjectsFilter] = useState({ include: [], exclude: [], confidence: 0 });
@@ -82,10 +83,14 @@ export default function InputQuery({ className }) {
 
     const requestData = subqueries.map((stage) => stage.value);
 
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`, 
-      requestData
-    );
+    // Build URL with subset parameter if selected
+    let searchUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`;
+    const subsetValue = getSubsetValue(selectedSubset || "All videos");
+    if (subsetValue) {
+      searchUrl += `?subset=${subsetValue}`;
+    }
+
+    const response = await axios.post(searchUrl, requestData);
 
     try {
       setQueryResult(response.data);
