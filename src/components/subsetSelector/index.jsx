@@ -17,19 +17,10 @@ const SubSelectionSelect = memo(function SubSelectionSelect({
 }) {
   const [localValue, setLocalValue] = useState(selectedSubSelection || "");
   
-  const subSelections = useMemo(() => {
-    return getAvailableSubSelections(selectedSubset);
-  }, [selectedSubset]);
-
-  const options = useMemo(() => {
-    return [
-      { value: "", label: `All ${selectedSubset}` },
-      ...subSelections.map(subSelection => ({
-        value: subSelection,
-        label: subSelection
-      }))
-    ];
-  }, [selectedSubset, subSelections]);
+  const allOptions = useMemo(() => [
+    "",
+    ...getAvailableSubSelections(selectedSubset)
+  ], [selectedSubset]);
 
   // Sync local state with prop when it changes
   useEffect(() => {
@@ -44,24 +35,25 @@ const SubSelectionSelect = memo(function SubSelectionSelect({
   }, [onSubSelectionChange]);
   
   return (
-    <Select
-      key={`subselection-${selectedSubset}`}
-      label="Select Sub-selection"
-      value={localValue}
-      onChange={handleChange}
-      className="!bg-white"
-      disabled={!showSubSelection}
-      animate={{
-        mount: { y: 0 },
-        unmount: { y: 25 },
-      }}
-    >
-      {options.map((option, index) => (
-        <Option key={`${selectedSubset}-${index}-${option.value}`} value={option.value}>
-          {option.label}
+    <div className={showSubSelection ? "block" : "hidden"}>
+      <Select
+        key={`subselection-${selectedSubset}`}
+        label="Select Sub-selection"
+        value={localValue}
+        onChange={handleChange}
+        className="!bg-white"
+        animate={{
+          mount: { y: 0 },
+          unmount: { y: 25 },
+        }}
+      >
+      {allOptions.map((option, index) => (
+        <Option key={`${selectedSubset}-${index}`} value={option}>
+          {option === "" ? `All ${selectedSubset}` : option}
         </Option>
       ))}
-    </Select>
+      </Select>
+    </div>
   );
 });
 
