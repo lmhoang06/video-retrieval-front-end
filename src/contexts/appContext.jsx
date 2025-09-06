@@ -8,7 +8,6 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [images, setImages] = useState([]);
-  const [sessionId, setSessionId] = useState(null);
   const [queryResult, setQueryResult] = useState([]);
   // Cache for per-video objects (stores unique class names array per keyframe id)
   const videoDetectionsCache = useRef(new Map());
@@ -203,8 +202,6 @@ export function AppProvider({ children }) {
   const value = {
     images,
     setImages,
-    sessionId,
-    setSessionId,
     loadImages,
     queryResult,
     setQueryResult,

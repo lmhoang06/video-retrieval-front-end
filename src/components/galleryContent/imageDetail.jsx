@@ -14,10 +14,7 @@ import {
   Button,
   IconButton,
 } from "@material-tailwind/react";
-import submitFrame from "@/libs/submit";
-import { useGallery } from "@/contexts/galleryContext";
 import { useApp } from "@/contexts/appContext";
-import { toast, Bounce } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import Image from "next/image";
@@ -84,7 +81,6 @@ ImageWithBoundingBoxes.displayName = "ImageWithBoundingBoxes";
 
 export default function ImageDetail({ imageData, open, handleOpen }) {
   const { videoName, frameName: frameIndex, src } = imageData;
-  const { sessionId } = useGallery();
   const { getKeyframeDetections } = useApp();
   const [bbox, setBbox] = useState([]); //normalized bounding boxes with xywhn
   const [showObjects, setShowObjects] = useState(false);
@@ -92,6 +88,8 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
   // Video metadata state (fetched from NEXT_PUBLIC_METADATA_SERVER)
   const [videoMeta, setVideoMeta] = useState({ fps: null, url: null, name: null });
   const [metaLoading, setMetaLoading] = useState(false);
+  const [fetchedVideos, setFetchedVideos] = useState(new Set());
+  const [failedVideos, setFailedVideos] = useState(new Set());
 
   // Fetch per-video metadata (fps and url)
   useEffect(() => {
@@ -108,10 +106,19 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
         const fps = typeof data?.fps === "string" ? parseFloat(data.fps) : Number(data?.fps);
         const url = data?.url ?? null;
         setVideoMeta({ fps: Number.isFinite(fps) ? fps : null, url, name: videoName });
+        setFetchedVideos(prev => new Set(prev).add(videoName));
+        // Remove from failed videos if it was previously failed
+        setFailedVideos(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(videoName);
+          return newSet;
+        });
       } catch (err) {
         if (!cancelled) {
           console.error("Failed to load video metadata", err);
           setVideoMeta({ fps: null, url: null, name: videoName });
+          // Don't add to fetchedVideos on failure, but add to failedVideos
+          setFailedVideos(prev => new Set(prev).add(videoName));
         }
       } finally {
         if (!cancelled) setMetaLoading(false);
@@ -119,14 +126,15 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     };
     // Only fetch when preview is toggled on, and metadata not yet loaded for this video
     if (!showPreviewVideo) return () => { cancelled = true; };
-    if (videoMeta?.name === videoName && (videoMeta.url || videoMeta.fps)) {
+    // Don't fetch if already successfully fetched, but allow re-fetch if previous attempt failed
+    if (fetchedVideos.has(videoName) && !failedVideos.has(videoName)) {
       return () => { cancelled = true; };
     }
     fetchMeta();
     return () => {
       cancelled = true;
     };
-  }, [videoName, showPreviewVideo]);
+  }, [videoName, showPreviewVideo, fetchedVideos, failedVideos]);
 
   // Use metadata fps with a safe fallback
   const FPS = videoMeta.fps || 25;
@@ -153,33 +161,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     maybeLoadBoxes();
     return () => { cancelled = true; };
   }, [showObjects, videoName, frameIndex, getKeyframeDetections]);
-
-  const handleSubmit = useCallback(() => {
-    const data = submitFrame(videoName, frameIndex, sessionId);
-    const status = data?.submission;
-
-    if (status === "true" || status === "TRUE") {
-      toast.success("Accepted", {
-        autoClose: 4500,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
-    }
-
-    if (status === "WRONG") {
-      toast.error("Wrong answer", {
-        autoClose: 4500,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
-    }
-  }, [frameIndex, videoName, sessionId]);
 
   // Use video URL from metadata
   const videoSrc = videoMeta.url || "";
@@ -263,15 +244,6 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
             color="blue"
             ripple
             variant="gradient"
-            onClick={handleSubmit}
-            size="sm"
-          >
-            Submit
-          </Button>
-          <Button
-            color="blue"
-            ripple
-            variant="gradient"
             size="sm"
             onClick={() => setShowObjects((v) => !v)}
           >
@@ -286,6 +258,28 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
           >
             Show preview video
           </Button>
+          {failedVideos.has(videoName) && (
+            <Button
+              color="orange"
+              ripple
+              variant="gradient"
+              size="sm"
+              onClick={() => {
+                setFailedVideos(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(videoName);
+                  return newSet;
+                });
+                setFetchedVideos(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(videoName);
+                  return newSet;
+                });
+              }}
+            >
+              Retry fetch metadata
+            </Button>
+          )}
         </div>
         {showPreviewVideo && (
           <div className="fixed bottom-1 right-1">
