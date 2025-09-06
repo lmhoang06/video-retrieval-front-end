@@ -8,9 +8,16 @@ import Image from "next/image";
 
 export default function Sidebar({ className }) {
   const [selectedSubset, setSelectedSubset] = useState("All videos");
+  const [selectedSubSelection, setSelectedSubSelection] = useState("");
 
   const handleSubsetChange = (subset) => {
     setSelectedSubset(subset);
+    // Reset sub-selection when main subset changes
+    setSelectedSubSelection("");
+  };
+
+  const handleSubSelectionChange = (subSelection) => {
+    setSelectedSubSelection(subSelection);
   };
 
   return (
@@ -33,13 +40,19 @@ export default function Sidebar({ className }) {
       <div className="px-2">
         <SubsetSelector
           selectedSubset={selectedSubset}
+          selectedSubSelection={selectedSubSelection}
           onSubsetChange={handleSubsetChange}
+          onSubSelectionChange={handleSubSelectionChange}
           className="mb-2"
         />
       </div>
 
       {/* Input query */}
-      <InputQuery className="h-full" selectedSubset={selectedSubset} />
+      <InputQuery 
+        className="h-full" 
+        selectedSubset={selectedSubset} 
+        selectedSubSelection={selectedSubSelection}
+      />
     </Card>
   );
 }

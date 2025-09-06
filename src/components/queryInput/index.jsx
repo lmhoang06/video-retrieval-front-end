@@ -10,9 +10,9 @@ import "react-toastify/dist/ReactToastify.css";
 import SubqueryInput from "./subqueryInput";
 import { IconPlus } from "@/libs/icon";
 import ObjectsQuery from "./objectsQuery";
-import { getSubsetValue } from "@/libs/subsetMapping";
+import { getSubsetValue, getSubSelectionValue } from "@/libs/subsetMapping";
 
-export default function InputQuery({ className, selectedSubset }) {
+export default function InputQuery({ className, selectedSubset, selectedSubSelection }) {
   const [subqueries, setSubqueries] = useState([]);
   const [objectsCollapsed, setObjectsCollapsed] = useState(true);
   const [objectsFilter, setObjectsFilter] = useState({ include: [], exclude: [], confidence: 0 });
@@ -85,7 +85,16 @@ export default function InputQuery({ className, selectedSubset }) {
 
     // Build URL with subset parameter if selected
     let searchUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`;
-    const subsetValue = getSubsetValue(selectedSubset || "All videos");
+    let subsetValue = getSubsetValue(selectedSubset || "All videos");
+    
+    // If sub-selection is selected, use sub-selection value instead
+    if (selectedSubSelection) {
+      const subSelectionValue = getSubSelectionValue(selectedSubset, selectedSubSelection);
+      if (subSelectionValue) {
+        subsetValue = subSelectionValue;
+      }
+    }
+    
     if (subsetValue) {
       searchUrl += `?subset=${subsetValue}`;
     }
