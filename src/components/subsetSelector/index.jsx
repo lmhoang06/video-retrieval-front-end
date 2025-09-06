@@ -24,7 +24,6 @@ const SubSelectionSelect = memo(function SubSelectionSelect({
   const options = useMemo(() => {
     return [
       { value: "", label: `All ${selectedSubset}` },
-      { value: "None", label: "None" },
       ...subSelections.map(subSelection => ({
         value: subSelection,
         label: subSelection
