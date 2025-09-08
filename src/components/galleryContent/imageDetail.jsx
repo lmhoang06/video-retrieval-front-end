@@ -200,12 +200,58 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
     }
   }, []);
 
+  // Helper to support Google Drive embed when URL is a Google Drive link
+  const getGoogleDriveEmbedUrl = useCallback((rawUrl, startSec) => {
+    if (!rawUrl) return null;
+    try {
+      const u = new URL(rawUrl);
+      const host = u.hostname.toLowerCase();
+      
+      // Check if it's a Google Drive URL
+      if (host.includes("drive.google.com")) {
+        let fileId = null;
+        
+        // Handle different Google Drive URL formats
+        if (u.pathname.includes("/file/d/")) {
+          // Format: https://drive.google.com/file/d/FILE_ID/view or /preview
+          const pathParts = u.pathname.split("/");
+          const fileIndex = pathParts.indexOf("d");
+          if (fileIndex !== -1 && pathParts[fileIndex + 1]) {
+            fileId = pathParts[fileIndex + 1];
+          }
+        } else if (u.searchParams.has("id")) {
+          // Format: https://drive.google.com/open?id=FILE_ID
+          fileId = u.searchParams.get("id");
+        }
+        
+        if (!fileId) return null;
+        
+        const start = Number.isFinite(startSec) ? Math.max(0, Math.floor(startSec)) : 0;
+        const params = new URLSearchParams({
+          controls: "1",
+        });
+        
+        // Add start time if specified
+        if (start > 0) {
+          params.set("t", `${start}s`);
+        }
+        
+        return `https://drive.google.com/file/d/${fileId}/preview?${params.toString()}`;
+      }
+      
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }, []);
+
   const startSeconds = useMemo(() => {
     const idx = Number(frameIndex);
     return Number.isFinite(idx) && FPS ? Math.max(0, Math.floor(idx / FPS)) : 0;
   }, [frameIndex, FPS]);
 
   const youtubeEmbedUrl = useMemo(() => getYouTubeEmbedUrl(videoSrc, startSeconds), [videoSrc, startSeconds, getYouTubeEmbedUrl]);
+  const googleDriveEmbedUrl = useMemo(() => getGoogleDriveEmbedUrl(videoSrc, startSeconds), [videoSrc, startSeconds, getGoogleDriveEmbedUrl]);
 
   return (
     <Dialog
@@ -293,7 +339,15 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
               &#10005;
             </IconButton>
             {videoSrc ? (
-              youtubeEmbedUrl ? (
+              googleDriveEmbedUrl ? (
+                <iframe
+                  src={googleDriveEmbedUrl}
+                  title={`Preview ${videoName}`}
+                  className="w-[36rem] h-[20.25rem] mt-1" /* 16:9 height for 36rem width: 36 * 9/16 = 20.25 */
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : youtubeEmbedUrl ? (
                 <iframe
                   src={youtubeEmbedUrl}
                   title={`Preview ${videoName}`}
@@ -302,17 +356,11 @@ export default function ImageDetail({ imageData, open, handleOpen }) {
                   allowFullScreen
                 />
               ) : (
-                <video
-                  src={videoSrc}
-                  controls
-                  autoPlay
-                  onLoadedMetadata={(e) => {
-                    if (FPS) {
-                      e.currentTarget.currentTime = Number(frameIndex) / FPS;
-                    }
-                  }}
-                  className="w-[36rem] h-auto mt-1"
-                />
+                <div className="w-[36rem] h-[20.25rem] mt-1 flex items-center justify-center bg-gray-200 rounded">
+                  <div className="text-gray-600 text-center">
+                    <p>Video preview not available</p>
+                  </div>
+                </div>
               )
             ) : (
               <div className="w-[36rem] h-auto mt-1 p-3 bg-white/70 text-sm text-red-600 rounded">
